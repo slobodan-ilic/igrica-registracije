@@ -64,6 +64,35 @@ copied, so no third-party licence rides along with it; the Serbian cross itself 
 a centuries-old heraldic device. The Cyrillic code under the shield and the
 tricolour on the blue band follow the current plate format.
 
+## How it fits together
+
+```
+src/
+  App.tsx           routing, preferences, and loading the active topic's data
+  topics.tsx        one entry per quiz: its data, its wording, how it is drawn
+  screens/          Home (chooser) · Setup (a topic's page) · Game (a round)
+  components/       QuizMap · Plate · NameCard · Chrome (toggle, stats, back)
+  lib/
+    useRound        one round: deck, score, streak, easy-mode choices, map states
+    useMapView      zoom and pan, and the gesture rules that drive them
+    router          ~50 lines over the History API; the route space is three paths
+    prefs           remembered settings, validated on read
+    sr              Serbian numeral agreement (1 / 2-4 / 5+)
+  styles/           layout · screens · game · controls
+scripts/
+  build-*.mjs       one per dataset; each fetches its source and writes src/data
+  lib/              sources (fetch + cache) · geo (simplify, winding, write) · serbian
+```
+
+**Adding a topic** means an entry in `topics.tsx` and a build script. Nothing in
+`QuizMap` knows what a licence plate is; it renders answerable shapes and reports
+which one was chosen.
+
+**The builds are the interesting part.** Each one re-fetches its source and
+refuses to write anything it cannot justify: an unmatched municipality, a total
+area that drifts from Serbia's real size, two mountains resolving to one summit,
+a hint that would give its own answer away.
+
 ## Topics
 
 Two so far, picked on the menu:

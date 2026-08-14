@@ -5,36 +5,16 @@
 // administrative division and are not included; the territory is carried as one
 // unplayable shape so the map keeps the same outline across topics.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { geoArea } from 'd3-geo'
 import { topology } from 'topojson-server'
 import { merge } from 'topojson-client'
-import rewind from '@mapbox/geojson-rewind'
+import { slug } from './lib/serbian.mjs'
+import { json } from './lib/sources.mjs'
+import { writeData } from './lib/geo.mjs'
 
-const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '..')
-const CACHE = resolve(root, 'scripts/.cache')
-
-const SOURCES = {
-  'srb_adm1.geojson':
-    'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/SRB/ADM1/geoBoundaries-SRB-ADM1_simplified.geojson',
-  'xkx_adm2.geojson':
-    'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/XKX/ADM2/geoBoundaries-XKX-ADM2_simplified.geojson',
-}
-
-async function source(name) {
-  const path = resolve(CACHE, name)
-  if (existsSync(path)) return readFileSync(path, 'utf8')
-  console.log(`fetching ${name}...`)
-  const res = await fetch(SOURCES[name])
-  if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`)
-  const body = await res.text()
-  mkdirSync(CACHE, { recursive: true })
-  writeFileSync(path, body)
-  return body
-}
+const ADM1 =
+  'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/SRB/ADM1/geoBoundaries-SRB-ADM1_simplified.geojson'
+const XKX_ADM2 =
+  'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/XKX/ADM2/geoBoundaries-XKX-ADM2_simplified.geojson'
 
 /** English boundary names -> the Serbian name and the district's seat. */
 const OKRUZI = {
@@ -65,17 +45,8 @@ const OKRUZI = {
   'Zlatibor District': ['Zlatiborski okrug', 'Užice'],
 }
 
-const slug = (s) =>
-  s
-    .toLowerCase()
-    .replace(/đ/g, 'dj')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-
-const adm1 = JSON.parse(await source('srb_adm1.geojson'))
-const kosovo = JSON.parse(await source('xkx_adm2.geojson'))
+const adm1 = await json('srb_adm1.geojson', ADM1)
+const kosovo = await json('xkx_adm2.geojson', XKX_ADM2)
 
 const unknown = adm1.features.map((f) => f.properties.shapeName).filter((n) => !OKRUZI[n])
 if (unknown.length) {
@@ -100,18 +71,7 @@ features.push({
   geometry: merge(topo, topo.objects.m.geometries),
 })
 
-const round = (v) => (Array.isArray(v) ? v.map(round) : Math.round(v * 1e4) / 1e4)
-for (const f of features) f.geometry.coordinates = round(f.geometry.coordinates)
+const { kb } = writeData('okruzi', features, { expectKm2: 88400 })
 
-const out = rewind({ type: 'FeatureCollection', features }, true)
-
-const total = out.features.reduce((s, f) => s + geoArea(f) * 6371 * 6371, 0)
-if (total < 82000 || total > 95000) {
-  console.error(`Sanity check failed: total area ${total.toFixed(0)} km2, expected ~88400`)
-  process.exit(1)
-}
-
-mkdirSync(resolve(root, 'src/data'), { recursive: true })
-writeFileSync(resolve(root, 'src/data/okruzi.json'), JSON.stringify(out))
 console.log(`OK  ${features.length - 1} districts + Kosovo drawn as context`)
-console.log(`    ${(JSON.stringify(out).length / 1024).toFixed(0)} KB, ${total.toFixed(0)} km2`)
+console.log(`    ${kb.toFixed(0)} KB`)

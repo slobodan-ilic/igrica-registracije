@@ -8,14 +8,9 @@
 // region — far safer than typing coordinates, and it fails loudly if two
 // mountains ever resolve to the same summit.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { toLatin, slug } from './lib/serbian.mjs'
-
-const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '..')
-const CACHE = resolve(root, 'scripts/.cache')
+import { overpass, source } from './lib/sources.mjs'
+import { writeData } from './lib/geo.mjs'
 
 /** name: [lonMin, lonMax, latMin, latMax, peakNameOverride?] */
 const MOUNTAINS = {
@@ -46,9 +41,7 @@ const MOUNTAINS = {
   Prokletije: [20.0, 20.35, 42.45, 42.68, 'Đeravica'],
 }
 
-const path = resolve(CACHE, 'peaks_osm.json')
-if (!existsSync(path)) throw new Error('missing peaks_osm.json — see scripts/README')
-const osm = JSON.parse(readFileSync(path, 'utf8'))
+const osm = await overpass('peaks_osm.json', await source('peaks.ql'))
 
 const peaks = osm.elements
   .filter((e) => /^\d+(\.\d+)?$/.test(String(e.tags?.ele ?? '')))
@@ -97,9 +90,7 @@ for (const [name, [x0, x1, y0, y1, override]] of Object.entries(MOUNTAINS)) {
 
 features.sort((a, b) => a.properties.name.localeCompare(b.properties.name, 'sr'))
 
-mkdirSync(resolve(root, 'src/data'), { recursive: true })
-const out = { type: 'FeatureCollection', features }
-writeFileSync(resolve(root, 'src/data/planine.json'), JSON.stringify(out))
+const { kb } = writeData('planine', features)
 
 const leaking = features.filter((f) =>
   slug(f.properties.covers[0]).includes(slug(f.properties.name)),
@@ -113,4 +104,4 @@ console.log(`OK  ${features.length} mountains, all resolved to distinct summits`
 for (const f of features) {
   console.log(`    ${f.properties.name.padEnd(18)} ${f.properties.covers[0]}`)
 }
-console.log(`    ${(JSON.stringify(out).length / 1024).toFixed(1)} KB`)
+console.log(`    ${kb.toFixed(1)} KB`)

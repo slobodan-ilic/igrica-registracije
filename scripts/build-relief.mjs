@@ -7,15 +7,11 @@
 // pixel is high because the DEM says it is.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import { PNG } from 'pngjs'
 import { contours } from 'd3-contour'
-import rewind from '@mapbox/geojson-rewind'
-
-const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '..')
-const CACHE = resolve(root, 'scripts/.cache/terrain')
+import { CACHE } from './lib/sources.mjs'
+import { simplify, writeData } from './lib/geo.mjs'
 
 const Z = 9
 const BB = [18.55, 41.7, 23.15, 46.3] // lon0, lat0, lon1, lat1
@@ -97,42 +93,6 @@ function blur(src, w, h, radius = 2) {
 
 const smoothed = blur(grid, W, H)
 
-/** Douglas–Peucker, in grid space. */
-function simplify(points, tol) {
-  if (points.length < 3) return points
-  const sq = tol * tol
-  const keep = new Uint8Array(points.length)
-  keep[0] = keep[points.length - 1] = 1
-  const stack = [[0, points.length - 1]]
-  while (stack.length) {
-    const [a, b] = stack.pop()
-    let idx = -1
-    let max = sq
-    const [ax, ay] = points[a]
-    const [bx, by] = points[b]
-    const dx = bx - ax
-    const dy = by - ay
-    const len = dx * dx + dy * dy
-    for (let i = a + 1; i < b; i++) {
-      const [px, py] = points[i]
-      let t = len ? ((px - ax) * dx + (py - ay) * dy) / len : 0
-      t = Math.max(0, Math.min(1, t))
-      const ex = ax + t * dx - px
-      const ey = ay + t * dy - py
-      const d = ex * ex + ey * ey
-      if (d > max) {
-        idx = i
-        max = d
-      }
-    }
-    if (idx > 0) {
-      keep[idx] = 1
-      stack.push([a, idx], [idx, b])
-    }
-  }
-  return points.filter((_, i) => keep[i])
-}
-
 /** Grid-space area, for dropping specks the map can never show. */
 const ringArea = (ring) => {
   let a = 0
@@ -147,7 +107,7 @@ const toLngLat = ([px, py]) => [
   Math.round(y2lat(Y0 + py / 256, Z) * 1e4) / 1e4,
 ]
 
-const features = contours()
+const bands = contours()
   .size([W, H])
   .thresholds(BANDS)(smoothed)
   .map((c) => ({
@@ -168,16 +128,14 @@ const features = contours()
   }))
   .filter((f) => f.geometry.coordinates.length)
 
-// d3-contour works in grid space, where y grows downward. Converting to lat/lon
-// flips that axis and reverses every ring, which d3-geo reads spherically as
-// "everything except this shape" — the whole country floods with one colour.
-mkdirSync(resolve(root, 'src/data'), { recursive: true })
-const out = rewind({ type: 'FeatureCollection', features }, true)
-writeFileSync(resolve(root, 'src/data/relief.json'), JSON.stringify(out))
 
-console.log(`OK  ${features.length} elevation bands from a ${W}x${H} DEM (~220 m/px)`)
-for (const f of features) {
+// d3-contour works in grid space, where y grows downward. Converting to lat/lon
+// flips that axis and reverses every ring; writeData normalises the winding.
+const { kb } = writeData('relief', bands)
+
+console.log(`OK  ${bands.length} elevation bands from a ${W}x${H} DEM (~220 m/px)`)
+for (const f of bands) {
   const rings = f.geometry.coordinates.reduce((n, p) => n + p.length, 0)
   console.log(`    above ${String(f.properties.level).padStart(4)} m — ${rings} rings`)
 }
-console.log(`    ${(JSON.stringify(out).length / 1024).toFixed(0)} KB`)
+console.log(`    ${kb.toFixed(0)} KB`)

@@ -1,0 +1,92 @@
+/* Page shells: the board, the centred column, the scrolling home. */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  width: min(1180px, 100%);
+  height: 100%;
+  margin: 0 auto;
+  padding: 14px 20px 6px;
+}
+
+/* The end-of-round summary replaces the whole board, rather than being squeezed
+   into the side column the map layout reserves. */
+.shell--game > .intro {
+  grid-column: 1 / -1;
+  place-self: center;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+/* Desktop: the map gets the full column height, everything else sits beside it. */
+.shell--game {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+  width: min(1320px, 100%);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: center;
+  padding: 20px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(20, 22, 26, 0.05), 0 10px 26px -16px rgba(20, 22, 26, 0.3);
+}
+
+/* Handheld: strip the chrome down so the map gets the screen. */
+@media (max-width: 900px) {
+  .shell--game {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* The mobile board is a flex column, so the summary centres with margins. */
+  .shell--game > .intro { margin: auto 0; }
+
+  .side {
+    gap: 7px;
+    padding: 4px 8px 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .side .bar__brand { display: none; }
+
+  .bar__stats { gap: 6px; }
+
+  .stat {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 9px;
+  }
+
+  .stat__value { font-size: 14px; }
+
+  .legend {
+    justify-content: center;
+    gap: 12px;
+    font-size: 10.5px;
+  }
+
+  .quiz { gap: 7px; }
+  .verdict { min-height: 0; }
+  .verdict__ok, .verdict__bad { padding: 5px 13px; }
+}
+
+.shell--center {
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+}

@@ -4,15 +4,12 @@
 // the only hand-entered data is which spa is worth teaching and, where the spa
 // and its settlement are named differently, what OSM calls it.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { geoContains } from 'd3-geo'
 import { toLatin, slug, key } from './lib/serbian.mjs'
-
-const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '..')
-const CACHE = resolve(root, 'scripts/.cache')
+import { overpass, source, ROOT } from './lib/sources.mjs'
+import { writeData } from './lib/geo.mjs'
 
 /** spa name -> the name OSM uses, when the settlement is called something else */
 const BANJE = {
@@ -89,16 +86,10 @@ const sharesRoot = (a, b) => {
     .some((w) => w.length >= 3 && x.length >= 3 && (w.startsWith(x.slice(0, 3)) || x.startsWith(w.slice(0, 3))))
 }
 
-const read = (name) => {
-  const path = resolve(CACHE, name)
-  if (!existsSync(path)) throw new Error(`missing ${name} — see scripts/README`)
-  return JSON.parse(readFileSync(path, 'utf8'))
-}
-
 // Every named node from both spa queries, keyed by normalised name.
 const nodes = new Map()
-for (const file of ['banje.json', 'banje2.json']) {
-  for (const e of read(file).elements) {
+for (const [file, ql] of [['banje.json', 'banje.ql'], ['banje2.json', 'banje2.ql']]) {
+  for (const e of (await overpass(file, await source(ql))).elements) {
     const name = e.tags?.name
     if (!name || e.lat === undefined) continue
     const k = key(toLatin(name))
@@ -109,7 +100,7 @@ for (const file of ['banje.json', 'banje2.json']) {
   }
 }
 
-const okruzi = JSON.parse(readFileSync(resolve(root, 'src/data/okruzi.json'), 'utf8'))
+const okruzi = JSON.parse(readFileSync(resolve(ROOT, 'src/data/okruzi.json'), 'utf8'))
 
 const features = []
 const missing = []
@@ -151,12 +142,10 @@ if (leaking.length) {
 
 features.sort((a, b) => a.properties.name.localeCompare(b.properties.name, 'sr'))
 
-mkdirSync(resolve(root, 'src/data'), { recursive: true })
-const out = { type: 'FeatureCollection', features }
-writeFileSync(resolve(root, 'src/data/banje.json'), JSON.stringify(out))
+const { kb } = writeData('banje', features)
 
 console.log(`OK  ${features.length} spa towns`)
 for (const f of features) {
   console.log(`    ${f.properties.name.padEnd(20)} ${f.properties.covers[0]}`)
 }
-console.log(`    ${(JSON.stringify(out).length / 1024).toFixed(1)} KB`)
+console.log(`    ${kb.toFixed(1)} KB`)

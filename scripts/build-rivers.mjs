@@ -5,17 +5,14 @@
 //   - River courses: OpenStreetMap via Overpass, waterway=river inside Serbia (ODbL 1.0)
 //   - Outline: geoBoundaries SRB + XKX ADM2, merged (OSM-derived, ODbL 1.0)
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { topology } from 'topojson-server'
 import { merge } from 'topojson-client'
-import rewind from '@mapbox/geojson-rewind'
 import { toLatin, slug } from './lib/serbian.mjs'
+import { json, overpass, source } from './lib/sources.mjs'
+import { simplify, writeData } from './lib/geo.mjs'
 
-const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '..')
-const CACHE = resolve(root, 'scripts/.cache')
+const BOUNDARIES = (iso) =>
+  `https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/${iso}/ADM2/geoBoundaries-${iso}-ADM2_simplified.geojson`
 
 /**
  * The rivers a Serbian school pupil is expected to know, and where each ends up.
@@ -49,6 +46,12 @@ const RIVERS = {
   Rasina: 'uliva se u Zapadnu Moravu',
   Đetinja: 'gradi Zapadnu Moravu',
 }
+
+/** Rough distance in km; fine at this scale and cheap in a hot loop. */
+const KM = ([x1, y1], [x2, y2]) => Math.hypot((x1 - x2) * 80, (y1 - y2) * 111)
+const lengthOf = (line) => line.reduce((s, p, i) => (i ? s + KM(line[i - 1], p) : 0), 0)
+/** Every 4th point is plenty for proximity tests and keeps this O(n^2) cheap. */
+const thin = (line) => line.filter((_, i) => i % 4 === 0 || i === line.length - 1)
 
 /**
  * Rivers do not stop at the border, and neither should the map — but they change
@@ -88,55 +91,6 @@ function canonical(raw) {
   return null
 }
 
-const read = (name) => {
-  const path = resolve(CACHE, name)
-  if (!existsSync(path)) throw new Error(`missing ${name} — see scripts/README`)
-  return JSON.parse(readFileSync(path, 'utf8'))
-}
-
-/** Douglas–Peucker. OSM traces rivers far finer than this map can show. */
-function simplify(points, tolerance) {
-  if (points.length < 3) return points
-  const sqTol = tolerance * tolerance
-  const keep = new Uint8Array(points.length)
-  keep[0] = keep[points.length - 1] = 1
-  const stack = [[0, points.length - 1]]
-
-  while (stack.length) {
-    const [first, last] = stack.pop()
-    let index = -1
-    let maxSq = sqTol
-    const [ax, ay] = points[first]
-    const [bx, by] = points[last]
-    const dx = bx - ax
-    const dy = by - ay
-    const len = dx * dx + dy * dy
-
-    for (let i = first + 1; i < last; i++) {
-      const [px, py] = points[i]
-      let t = len ? ((px - ax) * dx + (py - ay) * dy) / len : 0
-      t = Math.max(0, Math.min(1, t))
-      const ex = ax + t * dx - px
-      const ey = ay + t * dy - py
-      const sq = ex * ex + ey * ey
-      if (sq > maxSq) {
-        index = i
-        maxSq = sq
-      }
-    }
-    if (index > 0) {
-      keep[index] = 1
-      stack.push([first, index], [index, last])
-    }
-  }
-  return points.filter((_, i) => keep[i])
-}
-
-const KM = ([x1, y1], [x2, y2]) => Math.hypot((x1 - x2) * 80, (y1 - y2) * 111)
-const lengthOf = (line) => line.reduce((s, p, i) => (i ? s + KM(line[i - 1], p) : 0), 0)
-/** Every 4th point is plenty for proximity tests and keeps this O(n^2) cheap. */
-const thin = (line) => line.filter((_, i) => i % 4 === 0 || i === line.length - 1)
-
 /** Reports where a river arrives in disconnected pieces, so gaps stay visible. */
 function gaps(lines) {
   const pts = lines.map(thin)
@@ -166,7 +120,7 @@ function gaps(lines) {
 
 // --- rivers ------------------------------------------------------------------
 
-const osm = read('rivers_osm.json')
+const osm = await overpass('rivers_osm.json', await source('rivers.ql'))
 const byName = new Map()
 
 for (const way of osm.elements) {
@@ -220,34 +174,26 @@ const rivers = [...byName.entries()]
 
 const land = {
   type: 'FeatureCollection',
-  features: [...read('srb_adm2.geojson').features, ...read('xkx_adm2.geojson').features],
+  features: [
+    ...(await json('srb_adm2.geojson', BOUNDARIES('SRB'))).features,
+    ...(await json('xkx_adm2.geojson', BOUNDARIES('XKX'))).features,
+  ],
 }
 const topo = topology({ m: land }, 1e5)
-const outline = rewind(
+const outline = [
   {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        properties: { code: 'srbija', name: 'Srbija', covers: [] },
-        geometry: merge(topo, topo.objects.m.geometries),
-      },
-    ],
+    type: 'Feature',
+    properties: { code: 'srbija', name: 'Srbija', covers: [] },
+    geometry: merge(topo, topo.objects.m.geometries),
   },
-  true,
-)
-const round = (v) => (Array.isArray(v) ? v.map(round) : Math.round(v * 1e4) / 1e4)
-outline.features[0].geometry.coordinates = round(outline.features[0].geometry.coordinates)
+]
 
-mkdirSync(resolve(root, 'src/data'), { recursive: true })
-const out = { type: 'FeatureCollection', features: rivers }
-writeFileSync(resolve(root, 'src/data/rivers.json'), JSON.stringify(out))
-writeFileSync(resolve(root, 'src/data/outline.json'), JSON.stringify(outline))
+const riversOut = writeData('rivers', rivers)
+const outlineOut = writeData('outline', outline, { expectKm2: 88400 })
 
 const points = rivers.reduce(
   (n, f) => n + f.geometry.coordinates.reduce((m, l) => m + l.length, 0),
   0,
 )
 console.log(`OK  ${rivers.length} rivers, ${points} points after simplifying`)
-console.log(`    rivers ${(JSON.stringify(out).length / 1024).toFixed(0)} KB`)
-console.log(`    outline ${(JSON.stringify(outline).length / 1024).toFixed(0)} KB`)
+console.log(`    rivers ${riversOut.kb.toFixed(0)} KB, outline ${outlineOut.kb.toFixed(0)} KB`)

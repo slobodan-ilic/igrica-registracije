@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { geoMercator, geoPath } from 'd3-geo'
+import { useMapView, type Point } from '../lib/useMapView'
 import type { RegionCollection, RegionFeature, RegionState } from '../types'
 import './QuizMap.css'
 
@@ -12,17 +13,12 @@ import './QuizMap.css'
 const W = 612
 const H = 880
 const TOUCH = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
-const MIN_SCALE = 1
-const MAX_SCALE = 8
-
-type View = { k: number; x: number; y: number }
-type Point = { x: number; y: number }
 
 type Props = {
   regions: RegionCollection
   /** Paint state per region code; anything absent is 'idle'. */
   states: Record<string, RegionState>
-  /** Codes whose name should be printed on the map (the reveal after an answer). */
+  /** Codes whose name is printed on the map — the reveal after an answer. */
   labelled: string[]
   /** Codes that can be answered; anything else is shown but inert. */
   playable: Set<string>
@@ -30,8 +26,10 @@ type Props = {
   spotlight: boolean
   /** Whether an answered area's code is worth showing in the tooltip. */
   showCode: boolean
-  /** What to reveal about an area on hover — the topic decides, so a topic
-   *  whose answer is the name doesn't hand it over. */
+  /**
+   * What hovering reveals about an area. The topic decides, so a topic whose
+   * answer is its name does not hand it over.
+   */
   describe: (code: string, answered: boolean) => { title: string; sub?: string }
   /** How answers are drawn: filled areas, stroked lines, or point markers. */
   kind?: 'area' | 'line' | 'point'
@@ -60,7 +58,6 @@ export function QuizMap({
   disabled,
   onPick,
 }: Props) {
-  const [view, setView] = useState<View>({ k: 1, x: 0, y: 0 })
   const [hover, setHover] = useState<string | null>(null)
   /** Touch only: the region a tap selected, awaiting confirmation. */
   const [armed, setArmed] = useState<string | null>(null)
@@ -70,10 +67,6 @@ export function QuizMap({
 
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
-  const pointers = useRef(new Map<number, Point>())
-  const gesture = useRef<'none' | 'pan' | 'pinch'>('none')
-  const pinch = useRef<{ dist: number; mid: Point } | null>(null)
-  const panned = useRef(false)
 
   const { shapes, baseShapes, reliefShapes } = useMemo(() => {
     const projection = geoMercator().fitExtent(
@@ -107,37 +100,6 @@ export function QuizMap({
 
   const byCode = useMemo(() => new Map(shapes.map((s) => [s.code, s])), [shapes])
 
-  const clamp = (v: View): View => {
-    const k = Math.min(MAX_SCALE, Math.max(MIN_SCALE, v.k))
-    const maxX = (W * (k - 1)) / 2
-    const maxY = (H * (k - 1)) / 2
-    return {
-      k,
-      x: Math.min(maxX, Math.max(-maxX, v.x)),
-      y: Math.min(maxY, Math.max(-maxY, v.y)),
-    }
-  }
-
-  /**
-   * Client coords -> viewBox units measured from the centre, accounting for the
-   * letterboxing that `preserveAspectRatio` adds. Zooming about a point is only
-   * accurate if this matches what the browser actually painted.
-   */
-  const toView = useCallback((clientX: number, clientY: number): Point | null => {
-    const rect = svgRef.current?.getBoundingClientRect()
-    if (!rect) return null
-    const scale = Math.min(rect.width / W, rect.height / H)
-    const x = (clientX - rect.left - (rect.width - W * scale) / 2) / scale
-    const y = (clientY - rect.top - (rect.height - H * scale) / 2) / scale
-    return { x: x - W / 2, y: y - H / 2 }
-  }, [])
-
-  const unitsPerPixel = () => {
-    const rect = svgRef.current?.getBoundingClientRect()
-    if (!rect) return 1
-    return 1 / Math.min(rect.width / W, rect.height / H)
-  }
-
   /** True when the touch is in the upper half, so the banner should drop down. */
   const inTopHalf = (clientY: number) => {
     const rect = wrapRef.current?.getBoundingClientRect()
@@ -151,130 +113,40 @@ export function QuizMap({
     return owner instanceof SVGElement ? owner.dataset.code ?? null : null
   }
 
-  const zoomAbout = useCallback((at: Point, factor: number, drag: Point = { x: 0, y: 0 }) =>
-    setView((v) => {
-      const k = Math.min(MAX_SCALE, Math.max(MIN_SCALE, v.k * factor))
-      const ratio = k / v.k
-      return clamp({
-        k,
-        x: at.x - (at.x - v.x) * ratio + drag.x,
-        y: at.y - (at.y - v.y) * ratio + drag.y,
-      })
-    }), [])
-
-  /**
-   * React registers wheel handlers as passive, so preventDefault() inside one is
-   * ignored and warns. Binding it directly lets the map actually swallow the
-   * scroll it is consuming.
-   */
-  useEffect(() => {
-    const el = svgRef.current
-    if (!el) return
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      const at = toView(e.clientX, e.clientY)
-      if (at) zoomAbout(at, Math.exp(-e.deltaY * 0.0016))
-    }
-    el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
-  }, [toView, zoomAbout])
-
-  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId)
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-
-    if (e.pointerType === 'touch') {
-      if (pointers.current.size === 1) {
-        // One finger drags the map; a tap (a press that never moves) selects.
-        gesture.current = 'pan'
-        panned.current = false
-      } else if (pointers.current.size === 2) {
-        gesture.current = 'pinch'
-        const [a, b] = [...pointers.current.values()]
-        pinch.current = {
-          dist: Math.hypot(a.x - b.x, a.y - b.y),
-          mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-        }
+  /** A tap or click: on touch it arms first and commits on a second press. */
+  const onTap = useCallback(
+    (clientX: number, clientY: number, pointerType: string) => {
+      if (disabled) return
+      const code = regionAt(clientX, clientY)
+      if (pointerType !== 'touch') {
+        if (code) onPick(code)
+        return
       }
-    } else {
-      gesture.current = 'pan'
-      panned.current = false
-    }
-  }
-
-  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const prev = pointers.current.get(e.pointerId)
-    if (prev) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-
-    if (e.pointerType === 'mouse') {
-      const rect = wrapRef.current?.getBoundingClientRect()
-      if (rect) setTip({ x: e.clientX - rect.left, y: e.clientY - rect.top })
-      if (gesture.current === 'pan' && prev && e.buttons !== 0) {
-        const scale = unitsPerPixel()
-        if (Math.hypot(e.clientX - prev.x, e.clientY - prev.y) > 2) panned.current = true
-        setView((v) =>
-          clamp({ ...v, x: v.x + (e.clientX - prev.x) * scale, y: v.y + (e.clientY - prev.y) * scale }),
-        )
+      if (code && code === armed) {
+        onPick(code)
+        setArmed(null)
+      } else {
+        setArmed(code)
+        setArmedLow(inTopHalf(clientY))
       }
-      return
-    }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [disabled, armed, onPick],
+  )
 
-    if (gesture.current === 'pan' && prev) {
-      if (Math.hypot(e.clientX - prev.x, e.clientY - prev.y) > 1) panned.current = true
-      const scale = unitsPerPixel()
-      setView((v) =>
-        clamp({ ...v, x: v.x + (e.clientX - prev.x) * scale, y: v.y + (e.clientY - prev.y) * scale }),
-      )
-      return
-    }
+  const map = useMapView({
+    width: W,
+    height: H,
+    svgRef,
+    onTap,
+    onDrag: () => setArmed(null),
+  })
 
-    if (gesture.current === 'pinch' && pointers.current.size >= 2 && pinch.current) {
-      const [a, b] = [...pointers.current.values()]
-      const dist = Math.hypot(a.x - b.x, a.y - b.y)
-      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
-      const at = toView(mid.x, mid.y)
-      if (at && dist > 0) {
-        const scale = unitsPerPixel()
-        zoomAbout(at, dist / pinch.current.dist, {
-          x: (mid.x - pinch.current.mid.x) * scale,
-          y: (mid.y - pinch.current.mid.y) * scale,
-        })
-      }
-      pinch.current = { dist, mid }
-    }
-  }
-
-  const endPointer = (e: React.PointerEvent<SVGSVGElement>, commit: boolean) => {
-    const was = gesture.current
-    pointers.current.delete(e.pointerId)
-
-    if (pointers.current.size === 0) {
-      // A press that never moved selects; dragging the map never picks anything.
-      // This is handled here rather than in a click handler because capturing the
-      // pointer retargets the click away from the region that was under it.
-      if (commit && was === 'pan' && !panned.current && !disabled) {
-        const code = regionAt(e.clientX, e.clientY)
-        if (e.pointerType === 'touch') {
-          // Touch selects first and commits on a second, deliberate confirmation.
-          if (code && code === armed) {
-            onPick(code)
-            setArmed(null)
-          } else {
-            setArmed(code)
-            setArmedLow(inTopHalf(e.clientY))
-          }
-        } else if (code) {
-          onPick(code)
-        }
-      }
-      gesture.current = 'none'
-      pinch.current = null
-    } else if (was === 'pinch' && pointers.current.size === 1) {
-      // Don't let the leftover finger continue as a pan or a tap.
-      gesture.current = 'none'
-      pinch.current = null
-      panned.current = true
-    }
+  /** Mouse only: the tooltip follows the cursor. */
+  const trackTip = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.pointerType !== 'mouse') return
+    const rect = wrapRef.current?.getBoundingClientRect()
+    if (rect) setTip({ x: e.clientX - rect.left, y: e.clientY - rect.top })
   }
 
   // A new question clears whatever was selected.
@@ -315,21 +187,22 @@ export function QuizMap({
         ref={svgRef}
         className={`map__svg${disabled ? ' map__svg--locked' : ''}`}
         viewBox={`0 0 ${W} ${H}`}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={(e) => endPointer(e, true)}
-        onPointerCancel={(e) => endPointer(e, false)}
+        onPointerDown={map.handlers.onPointerDown}
+        onPointerMove={(e) => {
+          trackTip(e)
+          map.handlers.onPointerMove(e)
+        }}
+        onPointerUp={(e) => map.handlers.endPointer(e, true)}
+        onPointerCancel={(e) => map.handlers.endPointer(e, false)}
         onPointerLeave={() => {
           setHover(null)
           setTip(null)
         }}
-        onDoubleClick={() => setView({ k: 1, x: 0, y: 0 })}
+        onDoubleClick={map.reset}
         role="group"
         aria-label="Map of Serbian registration areas"
       >
-        <g
-          transform={`translate(${W / 2 + view.x} ${H / 2 + view.y}) scale(${view.k}) translate(${-W / 2} ${-H / 2})`}
-        >
+        <g transform={map.transform}>
           {baseShapes.map((d, i) => (
             <path key={`base-${i}`} d={d} className="region region--base" />
           ))}
@@ -404,7 +277,7 @@ export function QuizMap({
                 <g
                   key={s.code}
                   {...shared}
-                  transform={`translate(${s.centroid}) scale(${1 / view.k})`}
+                  transform={`translate(${s.centroid}) scale(${1 / map.view.k})`}
                 >
                   <circle className="pt__hit" r={12} />
                   {/* An answered marker becomes a solid badge: a small glyph is
@@ -434,15 +307,15 @@ export function QuizMap({
                 {/* Sits below a marker so it never covers it. */}
                 <text
                   className="region__label-halo"
-                  y={kind === 'point' ? 17 / view.k : 0}
-                  style={{ fontSize: 15 / view.k }}
+                  y={kind === 'point' ? 17 / map.view.k : 0}
+                  style={{ fontSize: 15 / map.view.k }}
                 >
                   {s.name}
                 </text>
                 <text
                   className="region__label-text"
-                  y={kind === 'point' ? 17 / view.k : 0}
-                  style={{ fontSize: 15 / view.k }}
+                  y={kind === 'point' ? 17 / map.view.k : 0}
+                  style={{ fontSize: 15 / map.view.k }}
                 >
                   {s.name}
                 </text>
@@ -487,8 +360,8 @@ export function QuizMap({
       )}
 
       <div className={`map__hint${armed ? ' map__hint--hidden' : ''}`}>
-        {view.k > 1.02 ? (
-          <button className="map__reset" onClick={() => setView({ k: 1, x: 0, y: 0 })}>
+        {map.view.k > 1.02 ? (
+          <button className="map__reset" onClick={map.reset}>
             Poništi zum
           </button>
         ) : (
