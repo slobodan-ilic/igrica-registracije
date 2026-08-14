@@ -58,10 +58,7 @@ export function Setup({
           <span className="switch__track" aria-hidden="true" />
           <span className="switch__text">
             Kosovo i Metohija
-            <em>
-              {kimCount} {plural(kimCount, 'oznaka koju', 'oznake koje', 'oznaka koje')} Srbija
-              vodi za pokrajinu · na terenu se od 2023. koriste RKS tablice
-            </em>
+            <em>{topic.kimNote?.(kimCount)}</em>
           </span>
         </label>
       )}

@@ -99,10 +99,15 @@ Two so far, picked on the menu:
 
 - **Tablice** — 81 registration codes (74 plus the 7 Serbia lists for Kosovo).
 - **Okruzi** — the 24 upravni okruzi plus the City of Belgrade, from
-  geoBoundaries SRB ADM1. `npm run build:okruzi` regenerates them. Kosovo's
-  districts are a separate administrative division and are not included; the
-  territory is drawn as one unplayable shape so the map keeps its outline
-  between topics.
+  geoBoundaries SRB ADM1, and behind the same Kosovo switch, the five okruzi
+  Serbia's own division recognises in Kosovo and Metohija. Those five are
+  assembled from geoBoundaries XKX ADM2 by grouping today's 38 municipalities
+  into the pre-1999 districts their parents belonged to; the builder checks each
+  result against the district's official area, which agrees to within 1% for
+  four of the five. The fifth is Prizrenski, which absorbs all of Mališevo — a
+  municipality assembled in 2000 out of four older ones spanning two okruzi, and
+  the one place the two divisions cannot be reconciled without inventing a
+  boundary. `npm run build:okruzi` regenerates them.
 
 - **Reke** — 24 rivers taught in Serbian schools, from OpenStreetMap
   (`waterway=river`) via Overpass, simplified with Douglas–Peucker to ~120 m.

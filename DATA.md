@@ -7,7 +7,7 @@ and fails loudly rather than guessing.
 | File | Built from | Terms |
 | --- | --- | --- |
 | `regions.json` | [geoBoundaries](https://www.geoboundaries.org/) SRB + XKX ADM2, grouped by the registration areas in the Правилник о регистрацији моторних и прикључних возила (Прилог 1, 5 May 2025) via [sr.wikipedia](https://sr.wikipedia.org/wiki/Регистарске_ознаке_у_Србији) | ODbL 1.0 |
-| `okruzi.json` | geoBoundaries SRB ADM1 | ODbL 1.0 |
+| `okruzi.json` | geoBoundaries SRB ADM1, plus XKX ADM2 grouped into the five Kosovo okruzi listed in the Уредба о управним окрузима via [sr.wikipedia](https://sr.wikipedia.org/wiki/Управни_окрузи_Србије) | ODbL 1.0 |
 | `rivers.json` | OpenStreetMap, `waterway=river` and the Bega canal reach, via Overpass | ODbL 1.0 |
 | `planine.json` | OpenStreetMap, `natural=peak` nodes with elevation | ODbL 1.0 |
 | `banje.json` | OpenStreetMap place nodes | ODbL 1.0 |

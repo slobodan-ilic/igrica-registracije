@@ -33,6 +33,11 @@ export type Topic = {
   count: number
   /** Whether the Kosovo and Metohija set can be switched on for this topic. */
   offersKim: boolean
+  /**
+   * The fine print under that switch, since what the set contains differs by
+   * topic. n is how many answers it adds. Required wherever offersKim is true.
+   */
+  kimNote?: (n: number) => string
   /** Sentence under the title on the menu; n is how many are in play. */
   lead: (n: number) => string
   /** What a single answerable area is called, for the instruction line. */
@@ -75,6 +80,9 @@ export const TOPICS: Record<TopicId, Topic> = {
     sample: { code: 'NS', name: 'Novi Sad', covers: [] },
     count: 74,
     offersKim: true,
+    kimNote: (n) =>
+      `${n} ${plural(n, 'oznaka koju', 'oznake koje', 'oznaka koje')} Srbija vodi za ` +
+      'pokrajinu · na terenu se od 2023. koriste RKS tablice',
     lead: (n) =>
       `Dobijate oznaku sa tablice — kliknite na registarsko područje kojem pripada. ` +
       `${cap(allOf(n, 'oznaka', 'oznake', 'oznaka'))}, tačno onako kako je Srbija podeljena.`,
@@ -103,10 +111,15 @@ export const TOPICS: Record<TopicId, Topic> = {
     }),
     sample: { code: 'zlatiborski-okrug', name: 'Zlatiborski okrug', covers: ['Užice'] },
     count: 25,
-    offersKim: false,
-    lead: () =>
+    offersKim: true,
+    kimNote: (n) =>
+      `${n} ${plural(n, 'upravni okrug', 'upravna okruga', 'upravnih okruga')} po podeli ` +
+      'Srbije · Kosovo istu teritoriju deli na sedam svojih okruga',
+    // Belgrade is a city, not an okrug, so it is counted apart from the rest.
+    lead: (n) =>
       'Dobijate ime okruga — kliknite gde se nalazi na mapi. ' +
-      '24 upravna okruga i Grad Beograd.',
+      `${n - 1} ${plural(n - 1, 'upravni okrug', 'upravna okruga', 'upravnih okruga')} ` +
+      'i Grad Beograd.',
     unit: 'okrug',
     allLabel: 'Svi okruzi',
     detail: 'sedište',

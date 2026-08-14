@@ -1,15 +1,20 @@
 // Builds src/data/okruzi.json: Serbia's administrative districts.
 //
-// Source: geoBoundaries SRB ADM1 (OSM-derived, ODbL 1.0), which is exactly the
-// 24 upravni okruzi plus the City of Belgrade. Kosovo's districts are a separate
-// administrative division and are not included; the territory is carried as one
-// unplayable shape so the map keeps the same outline across topics.
+// Sources:
+//   - geoBoundaries SRB ADM1 (OSM-derived, ODbL 1.0) — exactly the 24 upravni
+//     okruzi plus the City of Belgrade.
+//   - geoBoundaries XKX ADM2 (same licence) — Kosovo's 38 municipalities, which
+//     are grouped here into the five okruzi Serbia's own division recognises.
+//
+// The five Kosovo districts are taught in Serbian schools, so they are asked
+// like any other — behind the same Kosovo toggle as the plate codes.
 
 import { topology } from 'topojson-server'
 import { merge } from 'topojson-client'
-import { slug } from './lib/serbian.mjs'
+import rewind from '@mapbox/geojson-rewind'
+import { slug, toLatin, key } from './lib/serbian.mjs'
 import { json } from './lib/sources.mjs'
-import { writeData } from './lib/geo.mjs'
+import { writeData, sqkm } from './lib/geo.mjs'
 
 const ADM1 =
   'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/SRB/ADM1/geoBoundaries-SRB-ADM1_simplified.geojson'
@@ -45,6 +50,43 @@ const OKRUZI = {
   'Zlatibor District': ['Zlatiborski okrug', 'Užice'],
 }
 
+/**
+ * The five okruzi of Kosovo and Metohija as Serbia's division defines them:
+ * name, seat, the municipalities that make them up, and the district's official
+ * area in km².
+ *
+ * Serbia's division predates 1999 and Kosovo's own does not, so the two do not
+ * share a municipality list — the boundary layer here carries the 38 present-day
+ * municipalities, several of which were carved out of the older ones (Junik out
+ * of Dečani, Elez Han out of Kačanik, Gračanica out of Priština, and so on).
+ * Each is placed in the okrug its parent belonged to, so the areas below double
+ * as a check that the grouping is right.
+ *
+ * Source: sr.wikipedia "Управни окрузи Србије", itself the Уредба о управним
+ * окрузима. Municipalities are named as the boundary layer names them.
+ */
+const KIM = {
+  'Kosovski okrug': ['Priština', 3117,
+    ['Drenas', 'Kacanik', 'Han i Elezit', 'Fushe Kosove', 'Lipjan', 'Obiliq',
+     'Podujeva', 'Pristina', 'Gracanica', 'Ferizaj', 'Shtime', 'Shterpce']],
+  'Kosovskomitrovački okrug': ['Kosovska Mitrovica', 2050,
+    ['Vushtrri', 'Zvecan', 'Zubin Potok', 'Mitrovica', 'North Mitrovica',
+     'Leposaviq', 'Skenderaj']],
+  'Kosovskopomoravski okrug': ['Gnjilane', 1412,
+    ['Viti', 'Kllokot', 'Partesh', 'Gjilan', 'Kamenica', 'Ranillug', 'Novoberde']],
+  'Pećki okrug': ['Peć', 2450,
+    ['Decan', 'Junik', 'Gjakova', 'Istog', 'Klina', 'Peja']],
+  'Prizrenski okrug': ['Prizren', 1910,
+    ['Dragash', 'Rahovec', 'Prizren', 'Mamusha', 'Suhareka', 'Malisheva']],
+}
+
+// Mališevo was assembled in 2000 out of pieces of four older municipalities,
+// two of which sat in different okruzi. Its whole 307 km² lands in Prizrenski
+// here, which is where most of it came from — the ~140 km² that Pećki loses to
+// it is the one place these two divisions cannot be reconciled without drawing
+// a boundary that no source provides. Everything else agrees to within 1%.
+const KIM_TOLERANCE = 0.07
+
 const adm1 = await json('srb_adm1.geojson', ADM1)
 const kosovo = await json('xkx_adm2.geojson', XKX_ADM2)
 
@@ -63,15 +105,59 @@ const features = adm1.features.map((f) => {
   }
 })
 
-// Kosovo as one shape: drawn for context, never asked in this topic.
-const topo = topology({ m: kosovo }, 1e5)
-features.push({
-  type: 'Feature',
-  properties: { code: 'kosovo-i-metohija', name: 'Kosovo i Metohija', covers: [], kim: true },
-  geometry: merge(topo, topo.objects.m.geometries),
-})
+// --- Kosovo and Metohija -----------------------------------------------------
+
+const byName = new Map(
+  kosovo.features.map((f) => [key(toLatin(f.properties.shapeName)), f]),
+)
+const claimed = new Set()
+const drift = []
+
+for (const [name, [seat, expectKm2, munis]] of Object.entries(KIM)) {
+  const parts = munis.map((m) => {
+    const f = byName.get(key(toLatin(m)))
+    if (!f) {
+      console.error(`UNKNOWN municipality "${m}" in ${name}`)
+      process.exit(1)
+    }
+    claimed.add(key(toLatin(m)))
+    return f
+  })
+
+  const topo = topology({ m: { type: 'FeatureCollection', features: parts } }, 1e5)
+  // Rewound here rather than left to writeData: merge returns clockwise rings,
+  // which d3-geo reads as "the globe minus this district" — the area check below
+  // would then compare 510 million km² against 3,117 and blame the grouping.
+  const feature = rewind({
+    type: 'Feature',
+    properties: { code: slug(name), name, covers: [seat], kim: true },
+    geometry: merge(topo, topo.objects.m.geometries),
+  }, true)
+  features.push(feature)
+
+  const area = sqkm(feature)
+  drift.push([name, area, (area - expectKm2) / expectKm2])
+}
+
+const orphans = [...byName.keys()].filter((k) => !claimed.has(k))
+if (orphans.length) {
+  console.error('municipalities in no okrug:', orphans.join(', '))
+  process.exit(1)
+}
+
+const wrong = drift.filter(([, , d]) => Math.abs(d) > KIM_TOLERANCE)
+if (wrong.length) {
+  console.error('district areas are off — check the municipality lists:')
+  for (const [name, area, d] of wrong) {
+    console.error(`  ${name}: ${area.toFixed(0)} km2, ${(d * 100).toFixed(1)}% off`)
+  }
+  process.exit(1)
+}
 
 const { kb } = writeData('okruzi', features, { expectKm2: 88400 })
 
-console.log(`OK  ${features.length - 1} districts + Kosovo drawn as context`)
+console.log(`OK  ${features.length - drift.length} districts + ${drift.length} in Kosovo and Metohija`)
+for (const [name, area, d] of drift) {
+  console.log(`    ${name.padEnd(26)} ${area.toFixed(0).padStart(5)} km2  ${(d * 100).toFixed(1).padStart(5)}%`)
+}
 console.log(`    ${kb.toFixed(0)} KB`)
