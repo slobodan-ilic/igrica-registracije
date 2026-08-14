@@ -1,0 +1,42 @@
+{
+  "name": "igrica-registracije",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "build:map": "node scripts/build-map.mjs",
+    "build:okruzi": "node scripts/build-okruzi.mjs",
+    "build:rivers": "node scripts/build-rivers.mjs",
+    "build:planine": "node scripts/build-planine.mjs",
+    "build:relief": "node scripts/build-relief.mjs",
+    "build:banje": "node scripts/build-banje.mjs"
+  },
+  "dependencies": {
+    "d3-geo": "^3.1.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@mapbox/geojson-rewind": "^0.5.2",
+    "@types/d3-geo": "^3.1.1",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-server": "^3.0.4",
+    "@vitejs/plugin-react": "^6.0.4",
+    "d3-contour": "^4.0.2",
+    "oxlint": "^1.75.0",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^25.6.0",
+    "shapefile": "^0.6.6",
+    "topojson-client": "^3.1.0",
+    "topojson-server": "^3.0.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}

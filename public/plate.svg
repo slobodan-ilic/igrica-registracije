@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect x="2" y="16" width="60" height="32" rx="5" fill="#f7f8f6" stroke="#14161a" stroke-width="3"/>
+  <path d="M5 19h12v26H5z" fill="#0d3a86"/>
+  <text x="42" y="40" font-family="Helvetica,Arial,sans-serif" font-size="21" font-weight="700" text-anchor="middle" fill="#101215">SRB</text>
+</svg>

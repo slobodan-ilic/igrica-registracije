@@ -1,0 +1,158 @@
+/*
+ * The palette is taken from the object the game is about: a Serbian plate is
+ * white and black, with the blue of the country band and the red of the shield.
+ * Nothing here is decorative for its own sake — no glows, no gradient text.
+ */
+:root {
+  --paper: #f2f1ec;
+  --card: #ffffff;
+  --text: #15171c;
+  --muted: #5c626e;
+  --line: #dcd9d1;
+
+  /* Plate blue and shield red carry every accent in the app. */
+  --accent: #0d3a86;
+  --accent-soft: #eaf0fb;
+  --red: #c8102e;
+
+  --ok: #009486;
+  --ok-line: #005f56;
+  --ok-ink: #00695f;
+  --ok-soft: #e4f4f2;
+
+  --miss: #f08b45;
+  --miss-line: #ee7733;
+
+  /* A wrong pick and a missed answer never need telling apart — one is where
+     you clicked, the other is where you should have — so they share a colour
+     and the palette stays at two hues. */
+  --bad: #f08b45;
+  --bad-line: #ee7733;
+  --bad-ink: #a34c17;
+  --bad-soft: #fdefe4;
+
+  /* The map reads as an atlas: soft blue-grey land, darker boundaries. */
+  --region: #ccd6e5;
+  --region-line: #8092a9;
+  --region-hover: #a8bedd;
+  /* Kosovo and Metohija, in play: same weight as the rest, a shade apart in hue. */
+  --region-kim: #c6bce2;
+  /* Easy mode: the handful of areas you are choosing between. */
+  --region-candidate: #8fb2e0;
+  /* Out of play: neutral grey, so it reads as context rather than a target. */
+  --region-off: #dcdbd5;
+  --region-off-line: #b3b1a9;
+
+  /* Line topics: land is context, water is the subject. */
+  --land: #eeeade;
+  --land-line: #cac7bf;
+  --river: #7ba3cd;
+  --peak: #8b8070;
+  --mark-ok: #00a08f;
+  --mark-miss: #ee7733;
+  /* Hypsometric ramp, driven by measured elevation. */
+  --relief-0: #e4e0d2;
+  --relief-1: #dad3bf;
+  --relief-2: #cec5ac;
+  --relief-3: #c0b498;
+  --relief-4: #b1a284;
+  --relief-5: #a08e70;
+  --relief-6: #8d7b5e;
+  --relief-7: #79684f;
+
+  --line-strong: #a8b6cd;
+  --track: #e4e1d9;
+  --switch-off: #cfccc4;
+  --accent-ink: #ffffff;
+  --ok-border: #a5dbd4;
+  --bad-border: #f6cdac;
+  --label-halo: rgba(255, 255, 255, 0.95);
+  --label-ink: #10240f;
+  --tip-bg: #15171c;
+  --tip-ink: #ffffff;
+  --tip-muted: #a8afbd;
+
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+
+  color-scheme: light;
+  accent-color: var(--accent);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dark theme: same plate identity, lifted so it reads on a dark ground. */
+:root[data-theme='dark'] {
+  --paper: #131519;
+  --card: #1c2028;
+  --text: #e9ecf1;
+  --muted: #99a1ae;
+  --line: #2d323b;
+
+  --accent: #74a2ee;
+  --accent-soft: #1a2438;
+  --red: #ef5f74;
+
+  --ok: #12a394;
+  --ok-line: #8cf0e2;
+  --ok-ink: #6fdccf;
+  --ok-soft: #0f2622;
+  --ok-border: #1d5c55;
+
+  --miss: #d97434;
+  --miss-line: #c9631f;
+
+  --bad: #d97434;
+  --bad-line: #c9631f;
+  --bad-ink: #ffab74;
+  --bad-soft: #2a1c12;
+  --bad-border: #6b4325;
+
+  --region: #303d51;
+  --region-line: #61738b;
+  --region-hover: #4b6788;
+  --region-kim: #453b64;
+  --region-candidate: #3f6096;
+  --region-off: #23262c;
+  --region-off-line: #3b414a;
+
+  --land: #1e222a;
+  --land-line: #2f353f;
+  --river: #5b83b5;
+  --peak: #8e8270;
+  --mark-ok: #7fe6d6;
+  --mark-miss: #ff9450;
+  --relief-0: #23262c;
+  --relief-1: #292b30;
+  --relief-2: #303134;
+  --relief-3: #393836;
+  --relief-4: #423f39;
+  --relief-5: #4c473d;
+  --relief-6: #564f43;
+  --relief-7: #61584a;
+
+  --line-strong: #4a515d;
+  --track: #2a2e36;
+  --switch-off: #3a3f49;
+  --accent-ink: #10141c;
+  --label-halo: rgba(10, 12, 16, 0.9);
+  --label-ink: #eafaf0;
+  --tip-bg: #262b34;
+  --tip-ink: #f0f3f7;
+  --tip-muted: #a2aab8;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  color: var(--text);
+  background: var(--paper);
+  overflow: hidden;
+}
+
+button { font-family: inherit; }
