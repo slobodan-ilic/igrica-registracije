@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { geoContains } from 'd3-geo'
 import { toLatin, slug, key } from './lib/serbian.mjs'
-import { overpass, source, ROOT } from './lib/sources.mjs'
+import { overpass, query, ROOT } from './lib/sources.mjs'
 import { writeData } from './lib/geo.mjs'
 
 /** spa name -> the name OSM uses, when the settlement is called something else */
@@ -36,7 +36,14 @@ const BANJE = {
   Slankamen: 'Stari Slankamen',
   'Banja Junaković': null,
   'Banja Kanjiža': 'Kanjiža',
+  // Kosovo and Metohija. OSM labels these bilingually, hence the exact strings.
+  'Pećka Banja': 'Banjë - Banja',
+  'Banja Klokot': 'Klokot - Kllokot',
+  'Banjska Banja': 'Banjska',
 }
+
+/** Asked only when Kosovo and Metohija is switched on. */
+const KIM = new Set(['Pećka Banja', 'Banja Klokot', 'Banjska Banja'])
 
 /**
  * Serbia's statistical regions, used when a spa's district would give its name
@@ -68,6 +75,11 @@ const REGIONS = {
   'Pirotski okrug': 'Južna i istočna Srbija',
   'Jablanički okrug': 'Južna i istočna Srbija',
   'Pčinjski okrug': 'Južna i istočna Srbija',
+  'Kosovski okrug': 'Kosovo i Metohija',
+  'Kosovskomitrovački okrug': 'Kosovo i Metohija',
+  'Kosovskopomoravski okrug': 'Kosovo i Metohija',
+  'Pećki okrug': 'Kosovo i Metohija',
+  'Prizrenski okrug': 'Kosovo i Metohija',
 }
 
 /** The most telling word of a name — "Banja" alone identifies nothing. */
@@ -86,10 +98,10 @@ const sharesRoot = (a, b) => {
     .some((w) => w.length >= 3 && x.length >= 3 && (w.startsWith(x.slice(0, 3)) || x.startsWith(w.slice(0, 3))))
 }
 
-// Every named node from both spa queries, keyed by normalised name.
+// Every named node from the spa queries, keyed by normalised name.
 const nodes = new Map()
-for (const [file, ql] of [['banje.json', 'banje.ql'], ['banje2.json', 'banje2.ql']]) {
-  for (const e of (await overpass(file, await source(ql))).elements) {
+for (const file of ['banje', 'banje2', 'banje-kim']) {
+  for (const e of (await overpass(`${file}.json`, query(`${file}.overpassql`))).elements) {
     const name = e.tags?.name
     if (!name || e.lat === undefined) continue
     const k = key(toLatin(name))
@@ -113,9 +125,7 @@ for (const [name, osmName] of Object.entries(BANJE)) {
   }
   const point = [Math.round(hit.lon * 1e4) / 1e4, Math.round(hit.lat * 1e4) / 1e4]
 
-  const okrug = okruzi.features.find(
-    (f) => !f.properties.kim && geoContains(f, point),
-  )?.properties.name
+  const okrug = okruzi.features.find((f) => geoContains(f, point))?.properties.name
 
   // The name is the answer, so the district is the hint — unless the two share
   // a root, which is enough to hand it over: Niška Banja sits in the Nišavski
@@ -124,7 +134,7 @@ for (const [name, osmName] of Object.entries(BANJE)) {
 
   features.push({
     type: 'Feature',
-    properties: { code: slug(name), name, covers: [hint] },
+    properties: { code: slug(name), name, covers: [hint], ...(KIM.has(name) && { kim: true }) },
     geometry: { type: 'Point', coordinates: point },
   })
 }

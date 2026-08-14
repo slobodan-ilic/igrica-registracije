@@ -146,7 +146,10 @@ export const TOPICS: Record<TopicId, Topic> = {
     sample: { code: 'dunav', name: 'Dunav', covers: ['uliva se u Crno more'] },
     count: 24,
     kind: 'line',
-    offersKim: false,
+    offersKim: true,
+    kimNote: (n) =>
+      `${n} ${plural(n, 'reka', 'reke', 'reka')} sa Kosova i Metohije · ` +
+      'odatle vode otiču u tri različita mora',
     lead: (n) =>
       `Dobijate ime reke — kliknite na njen tok. ${n} ` +
       `${plural(n, 'reka koja se uči', 'reke koje se uče', 'reka koje se uče')} u školi, ` +
@@ -176,10 +179,13 @@ export const TOPICS: Record<TopicId, Topic> = {
       relief: (await import('./data/relief.json')).default,
     }),
     sample: { code: 'kopaonik', name: 'Kopaonik', covers: ['Pančićev vrh · 2017 m'] },
-    count: 24,
+    count: 22,
     kind: 'point',
     marker: 'peak',
-    offersKim: false,
+    offersKim: true,
+    kimNote: (n) =>
+      `${n} ${plural(n, 'planina', 'planine', 'planina')} sa Kosova i Metohije · ` +
+      'među njima i najviši vrh koji Srbija broji',
     lead: (n) =>
       `Dobijate ime planine — kliknite gde se nalazi. ${n} ` +
       `${plural(n, 'planina koja se uči', 'planine koje se uče', 'planina koje se uče')} u školi.`,
@@ -211,7 +217,10 @@ export const TOPICS: Record<TopicId, Topic> = {
     count: 23,
     kind: 'point',
     marker: 'spa',
-    offersKim: false,
+    offersKim: true,
+    kimNote: (n) =>
+      `${n} ${plural(n, 'banja', 'banje', 'banja')} sa Kosova i Metohije · ` +
+      'sa zvaničnog spiska banja u Srbiji',
     lead: (n) =>
       `Dobijate ime banje — kliknite gde se nalazi. ${n} ` +
       `${plural(n, 'banja koja se uči', 'banje koje se uče', 'banja koje se uče')} u školi.`,

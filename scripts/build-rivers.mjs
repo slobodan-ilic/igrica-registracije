@@ -8,7 +8,7 @@
 import { topology } from 'topojson-server'
 import { merge } from 'topojson-client'
 import { toLatin, slug } from './lib/serbian.mjs'
-import { json, overpass, source } from './lib/sources.mjs'
+import { json, overpass, query } from './lib/sources.mjs'
 import { simplify, writeData } from './lib/geo.mjs'
 
 const BOUNDARIES = (iso) =>
@@ -45,7 +45,16 @@ const RIVERS = {
   Toplica: 'uliva se u Južnu Moravu',
   Rasina: 'uliva se u Zapadnu Moravu',
   Đetinja: 'gradi Zapadnu Moravu',
+  // Kosovo and Metohija, where three drainage basins meet: the Sitnica runs to
+  // the Black Sea, the Beli Drim to the Adriatic, the Lepenac to the Aegean.
+  'Beli Drim': 'gradi Drim',
+  Sitnica: 'uliva se u Ibar',
+  Lepenac: 'uliva se u Vardar',
+  'Binačka Morava': 'gradi Južnu Moravu',
 }
+
+/** Asked only when Kosovo and Metohija is switched on. */
+const KIM = new Set(['Beli Drim', 'Sitnica', 'Lepenac', 'Binačka Morava'])
 
 /** Rough distance in km; fine at this scale and cheap in a hot loop. */
 const KM = ([x1, y1], [x2, y2]) => Math.hypot((x1 - x2) * 80, (y1 - y2) * 111)
@@ -71,6 +80,13 @@ const ALIASES = {
   Nishava: 'Nišava',
   // The Bega reaches Serbia as a canal; without it the river arrives in pieces.
   'Begejski kanal': 'Begej',
+  // Kosovo's rivers are mapped under their Albanian names.
+  'Drini i Bardhë': 'Beli Drim',
+  'Drini i Bardhe': 'Beli Drim',
+  'Sitnicë': 'Sitnica',
+  Lepenc: 'Lepenac',
+  Lepenec: 'Lepenac',
+  'Morava e Binçës': 'Binačka Morava',
 }
 
 /**
@@ -120,7 +136,7 @@ function gaps(lines) {
 
 // --- rivers ------------------------------------------------------------------
 
-const osm = await overpass('rivers_osm.json', await source('rivers.ql'))
+const osm = await overpass('rivers_osm.json', query('rivers.overpassql'))
 const byName = new Map()
 
 for (const way of osm.elements) {
@@ -165,6 +181,7 @@ const rivers = [...byName.entries()]
         name,
         // Shown on hover, where the name itself would be the answer.
         covers: [RIVERS[name]],
+        ...(KIM.has(name) && { kim: true }),
       },
       geometry: { type: 'MultiLineString', coordinates: lines },
     }

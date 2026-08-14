@@ -8,9 +8,9 @@ and fails loudly rather than guessing.
 | --- | --- | --- |
 | `regions.json` | [geoBoundaries](https://www.geoboundaries.org/) SRB + XKX ADM2, grouped by the registration areas in the Правилник о регистрацији моторних и прикључних возила (Прилог 1, 5 May 2025) via [sr.wikipedia](https://sr.wikipedia.org/wiki/Регистарске_ознаке_у_Србији) | ODbL 1.0 |
 | `okruzi.json` | geoBoundaries SRB ADM1, plus XKX ADM2 grouped into the five Kosovo okruzi listed in the Уредба о управним окрузима via [sr.wikipedia](https://sr.wikipedia.org/wiki/Управни_окрузи_Србије) | ODbL 1.0 |
-| `rivers.json` | OpenStreetMap, `waterway=river` and the Bega canal reach, via Overpass | ODbL 1.0 |
-| `planine.json` | OpenStreetMap, `natural=peak` nodes with elevation | ODbL 1.0 |
-| `banje.json` | OpenStreetMap place nodes | ODbL 1.0 |
+| `rivers.json` | OpenStreetMap, `waterway=river` and the Bega canal reach, via Overpass (`scripts/queries/rivers.overpassql`) | ODbL 1.0 |
+| `planine.json` | OpenStreetMap, `natural=peak` nodes with elevation (`scripts/queries/peaks.overpassql`) | ODbL 1.0 |
+| `banje.json` | OpenStreetMap place nodes (`scripts/queries/banje*.overpassql`); which spas to teach follows [sr.wikipedia, Списак бања у Србији](https://sr.wikipedia.org/wiki/Списак_бања_у_Србији) | ODbL 1.0 |
 | `outline.json` | geoBoundaries SRB + XKX ADM2, merged | ODbL 1.0 |
 | `relief.json` | [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) (terrarium-encoded, SRTM-derived) | see the registry entry; SRTM is public domain |
 

@@ -37,6 +37,9 @@
   --region-hover: #a8bedd;
   /* Kosovo and Metohija, in play: same weight as the rest, a shade apart in hue. */
   --region-kim: #c6bce2;
+  /* The same distinction on a line or a marker, which need a solid colour to
+     read at all: violet, well clear of the blue rivers and the grey peaks. */
+  --kim-mark: #7a68ab;
   /* Easy mode: the handful of areas you are choosing between. */
   --region-candidate: #8fb2e0;
   /* Out of play: neutral grey, so it reads as context rather than a target. */
@@ -112,6 +115,7 @@
   --region-line: #61738b;
   --region-hover: #4b6788;
   --region-kim: #453b64;
+  --kim-mark: #a394d6;
   --region-candidate: #3f6096;
   --region-off: #23262c;
   --region-off-line: #3b414a;

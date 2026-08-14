@@ -81,6 +81,7 @@ src/
   styles/           layout · screens · game · controls
 scripts/
   build-*.mjs       one per dataset; each fetches its source and writes src/data
+  queries/          the Overpass queries, kept with the code rather than cached
   lib/              sources (fetch + cache) · geo (simplify, winding, write) · serbian
 ```
 
@@ -109,14 +110,17 @@ Two so far, picked on the menu:
   the one place the two divisions cannot be reconciled without inventing a
   boundary. `npm run build:okruzi` regenerates them.
 
-- **Reke** — 24 rivers taught in Serbian schools, from OpenStreetMap
+- **Reke** — 28 rivers taught in Serbian schools, from OpenStreetMap
   (`waterway=river`) via Overpass, simplified with Douglas–Peucker to ~120 m.
   `npm run build:rivers` regenerates them plus the country outline they are
   drawn over. Answers are **lines**, so each river carries a wide transparent
   hit path under the visible stroke — a 1.5px line is otherwise unclickable.
   Rivers are **not clipped to the border** — the Danube crosses from Hungary out
   to Romania, the Sava arrives from Croatia, the Ibar runs down through Kosovo.
-  Cutting them at the border was arbitrary and made the map read wrongly.
+  Cutting them at the border was arbitrary and made the map read wrongly. The
+  four in the Kosovo set are the reason its rivers are worth teaching: three
+  drainage basins meet there, so the Sitnica ends in the Black Sea, the Beli
+  Drim in the Adriatic, and the Lepenac in the Aegean.
 
   Two things make that work. OSM renames a river when it crosses (Duna,
   Dunărea, Bega, Timiș) and sometimes carries both languages in one tag
@@ -155,16 +159,40 @@ are drawn and hit-tested. Line and point topics also supply a `base` collection
   two mountains resolve to the same summit, or if a summit's name would give its
   mountain away.
 
-- **Banje** — 23 spa towns as points, drawn as droplets so they are not mistaken
+- **Banje** — 26 spa towns as points, drawn as droplets so they are not mistaken
   for peaks. `npm run build:banje` takes each spa's coordinates from OSM and
   derives its district by point-in-polygon against `okruzi.json`, so the hint is
   computed rather than typed. Where the district shares a root with the spa
   (Niška Banja sits in the Nišavski okrug) it falls back to the wider
   statistical region, and the build fails if any hint still gives its answer away.
+  That rule earns its keep on the Kosovo set too: Pećka Banja sits in the Pećki
+  okrug, so it is hinted as Kosovo i Metohija instead.
 
 A topic supplies a dataset and how its question reads (`src/topics.tsx`);
 the deck, scoring, progress map, gestures and both difficulty modes are shared.
 Adding one is data plus a prompt component, not a new map.
+
+## The Kosovo and Metohija switch
+
+Every topic carries a Kosovo set, and one switch on the menu governs all of
+them. It is **off by default** and remembered per browser. What it adds:
+
+| topic | off | on | what the set is |
+| --- | --- | --- | --- |
+| Tablice | 74 | 81 | the 7 codes Serbia lists for the province |
+| Okruzi | 25 | 30 | the 5 okruzi of Serbia's own division |
+| Reke | 24 | 28 | Beli Drim, Sitnica, Lepenac, Binačka Morava |
+| Planine | 22 | 24 | Šar-planina and Prokletije |
+| Banje | 23 | 26 | Pećka Banja, Banja Klokot, Banjska Banja |
+
+Marked with `kim: true` in the data and filtered by `playableCodes`, so a topic
+opts in with one flag rather than any bespoke logic. Whatever is switched off
+still **draws** — the territory never disappears from the map, it just stops
+being asked — and whatever is switched on is tinted apart from the rest, as an
+area fill for the districts and `--kim-mark` violet for lines and points.
+
+Each topic writes its own fine print under the switch (`kimNote`), because what
+the set contains differs: plate codes are not spa towns.
 
 ## Difficulty
 

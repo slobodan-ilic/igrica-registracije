@@ -9,7 +9,7 @@
 // mountains ever resolve to the same summit.
 
 import { toLatin, slug } from './lib/serbian.mjs'
-import { overpass, source } from './lib/sources.mjs'
+import { overpass, query } from './lib/sources.mjs'
 import { writeData } from './lib/geo.mjs'
 
 /** name: [lonMin, lonMax, latMin, latMax, peakNameOverride?] */
@@ -41,7 +41,14 @@ const MOUNTAINS = {
   Prokletije: [20.0, 20.35, 42.45, 42.68, 'Đeravica'],
 }
 
-const osm = await overpass('peaks_osm.json', await source('peaks.ql'))
+/**
+ * Asked only when Kosovo and Metohija is switched on, so the one switch means
+ * the same thing in every topic. Đeravica, on Prokletije, is the highest summit
+ * Serbia claims, so switching the set off does noticeably shorten the list.
+ */
+const KIM = new Set(['Šar-planina', 'Prokletije'])
+
+const osm = await overpass('peaks_osm.json', query('peaks.overpassql'))
 
 const peaks = osm.elements
   .filter((e) => /^\d+(\.\d+)?$/.test(String(e.tags?.ele ?? '')))
@@ -80,6 +87,7 @@ for (const [name, [x0, x1, y0, y1, override]] of Object.entries(MOUNTAINS)) {
       code: slug(name),
       name,
       covers: [leaks ? `${top.ele} m` : `${peak} · ${top.ele} m`],
+      ...(KIM.has(name) && { kim: true }),
     },
     geometry: {
       type: 'Point',
