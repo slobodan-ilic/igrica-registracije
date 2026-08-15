@@ -78,6 +78,10 @@ const chunk = (list, n) =>
  */
 export async function leadImages(titles) {
   const found = new Map()
+  // Which titles are real articles, separately from which have a picture: an
+  // article with no lead image is a fact about Wikipedia, a title that does not
+  // exist at all is a mistake on our side.
+  const exists = new Set()
   for (const part of chunk(titles, 40)) {
     const q = await api('sr.wikipedia.org', {
       action: 'query',
@@ -95,11 +99,13 @@ export async function leadImages(titles) {
     }
     for (const page of q.pages ?? []) {
       const asked = back.get(page.title) ?? page.title
-      if (page.missing || !page.pageimage || !page.thumbnail) continue
+      if (page.missing) continue
+      exists.add(asked)
+      if (!page.pageimage || !page.thumbnail) continue
       found.set(asked, { file: page.pageimage, url: page.thumbnail.source.split('?')[0] })
     }
   }
-  return found
+  return { images: found, exists }
 }
 
 /**

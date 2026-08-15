@@ -184,8 +184,17 @@ attention.
 
 `npm run build:slike` takes the lead image of each place's sr.wikipedia article
 (our names are Latin, the articles are Cyrillic, so it transliterates first) and
-cuts a 640px card and a 160px tile from it. Coverage is 79/81 plate areas, 25/26
-spas, 27/28 rivers and 18/24 mountains; the rest simply render without one.
+cuts a 640px card and a 160px tile from it. Coverage is 79/81 plate areas, 28/28
+rivers, 24/26 spas and 23/24 mountains; the rest simply render without one.
+
+Finding the article is most of the work. sr.wikipedia is mostly Cyrillic but
+files some articles under their Latin name (Suva planina, Povlen) and others
+under a disambiguator (Тара (планина)), so each place is tried against a list of
+candidate titles and the first that yields a *usable* photograph wins — a page
+that exists but leads with a relief map falls through to the next rather than
+ending the search. Only seven titles are hand-written, because a hand-written
+title that is wrong looks exactly like "this place has no photograph"; the build
+therefore fails outright if one of them is not a real article.
 
 Two rules keep it honest, and both are enforced by the build rather than by
 care:
