@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { QuizMap } from '../components/QuizMap'
 import { BackLink, Stat, Streak, ThemeToggle } from '../components/Chrome'
+import { ContactSheet, Photo } from '../components/Photo'
 import { href, linkProps } from '../lib/router'
 import { joinSr } from '../lib/game'
 import { CHOICES, useRound } from '../lib/useRound'
@@ -59,19 +60,12 @@ export function Game(props: Props) {
         </h1>
         <p className="intro__lead">Najduži niz: {round.best}</p>
 
-        {round.missed.length > 0 && (
-          <div className="recap">
-            <h2 className="recap__title">Za ponavljanje</h2>
-            <ul className="recap__list">
-              {round.missed.map((m) => (
-                <li key={m.code}>
-                  {topic.showCode && <span className="recap__code">{m.code}</span>}
-                  <span>{m.name}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <ContactSheet
+          topic={topic.id}
+          items={round.deck.map((c) => byCode.get(c)).filter((i) => i !== undefined)}
+          results={round.results}
+          photos={data.photos}
+        />
 
         <div className="intro__actions">
           <button className="btn" onClick={props.onReplay}>
@@ -137,10 +131,20 @@ export function Game(props: Props) {
               </span>
             )}
           </div>
-          {round.answer && !round.answer.correct && (
-            <button className="btn btn--sm" onClick={round.next} autoFocus>
-              Dalje →
-            </button>
+          {round.answer && !round.answer.correct && round.target && (
+            <>
+              {/* Shown at the one moment attention is guaranteed: you were
+                  wrong, and here is what the place actually looks like. */}
+              <Photo
+                topic={topic.id}
+                code={round.target.code}
+                name={round.target.name}
+                photos={data.photos}
+              />
+              <button className="btn btn--sm" onClick={round.next} autoFocus>
+                Dalje →
+              </button>
+            </>
           )}
         </div>
       </aside>

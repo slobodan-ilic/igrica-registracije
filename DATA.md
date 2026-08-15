@@ -12,7 +12,14 @@ and fails loudly rather than guessing.
 | `planine.json` | OpenStreetMap, `natural=peak` nodes with elevation (`scripts/queries/peaks.overpassql`) | ODbL 1.0 |
 | `banje.json` | OpenStreetMap place nodes (`scripts/queries/banje*.overpassql`); which spas to teach follows [sr.wikipedia, Списак бања у Србији](https://sr.wikipedia.org/wiki/Списак_бања_у_Србији) | ODbL 1.0 |
 | `outline.json` | geoBoundaries SRB + XKX ADM2, merged | ODbL 1.0 |
+| `public/img/` + `slike-*.json` | Lead photographs of each place from [sr.wikipedia](https://sr.wikipedia.org/), hosted on [Wikimedia Commons](https://commons.wikimedia.org/) (`scripts/build-slike.mjs`). Author and licence are recorded per image and shown with it. | per image: CC BY, CC BY-SA, CC0 or public domain |
 | `relief.json` | [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) (terrarium-encoded, SRTM-derived) | see the registry entry; SRTM is public domain |
+
+**Photographs** are individually credited in the app — under each one when it
+appears, and in the "Fotografije" list on the end-of-round summary. Each entry
+links to the file's page on Commons, where the full licence text lives. Only
+Commons-hosted files under a free licence are used; anything uploaded locally to
+sr.wikipedia, and every map, crest or flag, is rejected by the build.
 
 **© OpenStreetMap contributors.** OSM-derived data is published under the
 [Open Database License](https://opendatacommons.org/licenses/odbl/). geoBoundaries

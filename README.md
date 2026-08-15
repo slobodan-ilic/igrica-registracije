@@ -82,7 +82,9 @@ src/
 scripts/
   build-*.mjs       one per dataset; each fetches its source and writes src/data
   queries/          the Overpass queries, kept with the code rather than cached
-  lib/              sources (fetch + cache) · geo (simplify, winding, write) · serbian
+  lib/              sources (fetch + cache) · geo (simplify, winding, write)
+                    · serbian (transliteration) · wiki (Wikipedia and Commons)
+public/img/         one photograph per answer, built by build-slike.mjs
 ```
 
 **Adding a topic** means an entry in `topics.tsx` and a build script. Nothing in
@@ -171,6 +173,35 @@ are drawn and hit-tested. Line and point topics also supply a `base` collection
 A topic supplies a dataset and how its question reads (`src/topics.tsx`);
 the deck, scoring, progress map, gestures and both difficulty modes are shared.
 Adding one is data plus a prompt component, not a new map.
+
+## Photographs
+
+Every answer that has one carries a photograph, shown **only after it has been
+answered** — under the reveal when you get it wrong, and as a tile on the
+end-of-round contact sheet. That is the point: a name is easier to remember once
+it has a picture attached, and the moment you were wrong is when you are paying
+attention.
+
+`npm run build:slike` takes the lead image of each place's sr.wikipedia article
+(our names are Latin, the articles are Cyrillic, so it transliterates first) and
+cuts a 640px card and a 160px tile from it. Coverage is 79/81 plate areas, 25/26
+spas, 27/28 rivers and 18/24 mountains; the rest simply render without one.
+
+Two rules keep it honest, and both are enforced by the build rather than by
+care:
+
+- **Nothing that could give an answer away.** Okruzi are excluded outright,
+  because their articles lead with a locator map — `Bor_in_Serbia.svg` is a
+  picture of the answer. Any file shaped like a diagram, crest or flag is
+  rejected wherever it appears.
+- **Nothing whose licence we cannot state.** Only Commons-hosted files under a
+  free licence are kept; author and licence are recorded per image and shown
+  with it, and files uploaded locally to sr.wikipedia are skipped as probably
+  non-free.
+
+Wikimedia rate-limits hard and only renders thumbnails at certain widths, so the
+build takes its URLs from the API rather than assembling them, caches every
+response and image, and backs off on a 429.
 
 ## The Kosovo and Metohija switch
 

@@ -1,0 +1,197 @@
+/* ---------- the photograph shown once an answer is known ---------- */
+
+.photo {
+  margin: 0.7rem 0 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--region-off);
+  /* Reserved before the image lands, so the panel does not jump. */
+  aspect-ratio: 4 / 3;
+  position: relative;
+  animation: photo-in 260ms ease-out;
+}
+
+@keyframes photo-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.photo__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Attribution rides on the image so it cannot be separated from it. */
+.photo__credit {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  padding: 1.4rem 0.55rem 0.35rem;
+  background: linear-gradient(transparent, rgb(0 0 0 / 0.62));
+  color: rgb(255 255 255 / 0.9);
+  font-size: 0.66rem;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.photo__credit:hover { color: #fff; }
+
+.photo__author {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo__licence {
+  flex: none;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- the end-of-round contact sheet ---------- */
+
+.sheet {
+  margin-top: 1.4rem;
+  width: 100%;
+  /* The summary around it is centred; the sheet's own rows read left. */
+  text-align: left;
+}
+
+.sheet__title {
+  margin: 0 0 0.6rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sheet__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Photograph-less topics: names only, in the same two colours. */
+.sheet__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.45rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sheet__list li {
+  padding: 0.22rem 0.55rem;
+  border: 2px solid var(--mark-ok);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.sheet__list .sheet__miss { border-color: var(--mark-miss); }
+
+.sheet__item {
+  position: relative;
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--region-off);
+  aspect-ratio: 4 / 3;
+  /* The outcome is a border, so it survives greyscale and colour blindness. */
+  outline: 2px solid var(--mark-ok);
+  outline-offset: -2px;
+}
+
+.sheet__item--missed { outline-color: var(--mark-miss); }
+
+.sheet__item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* No photograph: the name alone, centred, rather than an empty box. */
+.sheet__item--bare {
+  display: grid;
+  place-items: center;
+  padding: 0.3rem;
+}
+
+.sheet__name {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 1rem 0.4rem 0.3rem;
+  background: linear-gradient(transparent, rgb(0 0 0 / 0.68));
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.sheet__item--bare .sheet__name {
+  position: static;
+  padding: 0;
+  background: none;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* Which outcome each border means. */
+.sheet__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.sheet__key li { display: flex; align-items: center; gap: 0.32rem; }
+
+.sheet__swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+  border: 2px solid var(--mark-ok);
+}
+
+.sheet__swatch--missed { border-color: var(--mark-miss); }
+
+/* Attribution for the grid, where each tile is too small to carry its own. */
+.sheet__credits {
+  margin-top: 0.7rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.sheet__credits summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sheet__credits ul {
+  margin: 0.4rem 0 0;
+  padding: 0 0 0 0.2rem;
+  list-style: none;
+  display: grid;
+  gap: 0.18rem;
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.sheet__credits a { color: inherit; }

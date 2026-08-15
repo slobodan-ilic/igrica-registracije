@@ -32,3 +32,13 @@ export type RegionState = 'idle' | 'correct' | 'missed' | 'wrong' | 'revealed'
 
 /** The lasting outcome of a region's question, once it has been asked. */
 export type Result = 'correct' | 'missed'
+
+/**
+ * What Commons asks us to say about a photograph: author, licence, and a link
+ * to the file's page. Kept to one letter each because there is one of these per
+ * answer and they ship with the topic.
+ */
+export type Credit = { a: string; l: string; u: string }
+
+/** Credits by region code. A region with no photograph simply has no entry. */
+export type Photos = Record<string, Credit>

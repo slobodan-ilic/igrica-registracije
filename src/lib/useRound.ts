@@ -119,7 +119,7 @@ export function useRound({ codes, byCode, centroids, length, easy }: Options) {
   }, [answer, code])
 
   return {
-    deck, step, code, target, answer, score, streak, best, missed, done,
+    deck, step, code, target, answer, score, streak, best, missed, done, results,
     choices, states, labelled, pick, next,
   }
 }

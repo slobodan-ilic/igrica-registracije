@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Plate } from './components/Plate'
 import { NameCard } from './components/NameCard'
-import type { RegionCollection, RegionProps } from './types'
+import type { Photos, RegionCollection, RegionProps } from './types'
 import { allOf, plural } from './lib/sr'
 
 /**
@@ -14,6 +14,8 @@ export type TopicData = {
   regions: RegionCollection
   base?: RegionCollection
   relief?: unknown
+  /** Photograph credits by code; absent for topics that have no photographs. */
+  photos?: Photos
 }
 
 export type Topic = {
@@ -76,6 +78,7 @@ export const TOPICS: Record<TopicId, Topic> = {
     card: 'Pogodi kojem području pripada oznaka sa tablice.',
     load: async () => ({
       regions: (await import('./data/regions.json')).default as unknown as RegionCollection,
+      photos: (await import('./data/slike-tablice.json')).default as Photos,
     }),
     sample: { code: 'NS', name: 'Novi Sad', covers: [] },
     count: 74,
@@ -140,6 +143,7 @@ export const TOPICS: Record<TopicId, Topic> = {
     card: 'Prati tok reke kroz Srbiju i pronađi je na mapi.',
     load: async () => ({
       regions: (await import('./data/rivers.json')).default as unknown as RegionCollection,
+      photos: (await import('./data/slike-reke.json')).default as Photos,
       base: (await import('./data/outline.json')).default as unknown as RegionCollection,
       relief: (await import('./data/relief.json')).default,
     }),
@@ -175,6 +179,7 @@ export const TOPICS: Record<TopicId, Topic> = {
     card: 'Pronađi planinu na mapi — od Fruške gore do Kopaonika.',
     load: async () => ({
       regions: (await import('./data/planine.json')).default as unknown as RegionCollection,
+      photos: (await import('./data/slike-planine.json')).default as Photos,
       base: (await import('./data/outline.json')).default as unknown as RegionCollection,
       relief: (await import('./data/relief.json')).default,
     }),
@@ -210,6 +215,7 @@ export const TOPICS: Record<TopicId, Topic> = {
     card: 'Pronađi poznate srpske banje na mapi.',
     load: async () => ({
       regions: (await import('./data/banje.json')).default as unknown as RegionCollection,
+      photos: (await import('./data/slike-banje.json')).default as Photos,
       base: (await import('./data/outline.json')).default as unknown as RegionCollection,
       relief: (await import('./data/relief.json')).default,
     }),
