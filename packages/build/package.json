@@ -9,7 +9,8 @@
     "./geo": "./geo.mjs",
     "./serbian": "./serbian.mjs",
     "./wiki": "./wiki.mjs",
-    "./slike": "./slike.mjs"
+    "./slike": "./slike.mjs",
+    "./osm": "./osm.mjs"
   },
   "dependencies": {
     "@mapbox/geojson-rewind": "^0.5.2",

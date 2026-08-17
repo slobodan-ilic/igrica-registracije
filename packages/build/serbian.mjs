@@ -5,6 +5,10 @@ const CYR = {
   а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', ђ: 'đ', е: 'e', ж: 'ž', з: 'z', и: 'i',
   ј: 'j', к: 'k', л: 'l', љ: 'lj', м: 'm', н: 'n', њ: 'nj', о: 'o', п: 'p', р: 'r',
   с: 's', т: 't', ћ: 'ć', у: 'u', ф: 'f', х: 'h', ц: 'c', ч: 'č', џ: 'dž', ш: 'š',
+  // Macedonian has three letters Serbian does not; these are their Serbian
+  // equivalents, so Ѓорче Петров comes out as Đorče Petrov. Serbian text never
+  // contains them, so adding them changes nothing that already worked.
+  ѓ: 'đ', ќ: 'ć', ѕ: 'dz',
 }
 
 /** Proper Latin, diacritics intact: "Аранђеловац" -> "Aranđelovac". */

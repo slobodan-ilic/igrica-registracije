@@ -4,12 +4,13 @@ A quiz for learning licence-plate codes. You get a plate, you click the
 registration area it belongs to. Right answers go green and score; wrong ones go
 red, reveal the correct area and show a photograph of it.
 
-Two countries so far, each its own topic with its own map and its own plate:
+Three countries so far, each its own topic with its own map and its own plate:
 
 | | | at |
 | --- | --- | --- |
 | **Srbija** | 81 codes | `/` — the front page |
 | **Hrvatska** | 34 codes | `/hrvatska` |
+| **Makedonija** | 34 codes | `/makedonija` |
 
 The interface is Serbian throughout, whichever country you are playing. Serbia
 sits at the root because it is the flagship; every other country gets its own
@@ -22,6 +23,7 @@ come from `@kviz/engine`. This app supplies the plate, the areas and the wording
 npm run dev -w @kviz/tablice
 npm run build:map      # data/srbija.json
 npm run build:map-hr   # data/hrvatska.json
+npm run build:map-mk   # data/makedonija.json
 npm run build:slike    # the photographs
 ```
 
@@ -117,3 +119,35 @@ split from, and 1,100 islets under 4 km² are dropped as unclickable.
 
 Croatia has no Kosovo switch, and no photographs yet — the app renders fine
 without them.
+
+## North Macedonia
+
+34 codes, from mk.wikipedia's table, which gives code, region and covered
+municipalities in one row.
+
+Boundaries are OpenStreetMap again, but at two levels: `admin_level=7` is the 80
+municipalities the list is written in terms of, and `admin_level=6` is the City
+of Skopje — a single unit covering ten of them, which the list names as a whole
+under SK. Fetching both means Skopje does not have to be assembled by hand.
+
+Names arrive in Cyrillic on both sides and are transliterated for display, so
+the app stays in Latin script: Скопје becomes Skopje, Ѓорче Петров becomes
+Đorče Petrov. That needed three letters Serbian does not have — ѓ, ќ and ѕ,
+added to `@kviz/build/serbian` as their Serbian equivalents đ, ć and dz. Serbian
+text never contains them, so every existing dataset rebuilds byte-identical.
+
+Three naming differences had to be stated outright: OSM carries
+`Општина Демир Хисар/Мургашево` with both names in one tag, and the list
+misspells Дебарца as Дебрца and Ростуша as Ростуше.
+
+The build fails if any municipality belongs to no code. Skopje's ten inner
+municipalities are the deliberate exception, and they are recognised by
+point-in-polygon against the city rather than by touching its border — Čair and
+Centar sit wholly inside it and touch its outer boundary nowhere.
+
+### The plate
+
+The country mark is **NMK**, not the MK it was before 2019. The distinctive part
+is the small red block after the code, carrying the same letters again in gold
+Cyrillic above the serial's — so ST reads СТ, and SK reads СК, which to a Latin
+eye looks like CK. Red and gold are the national pairing, as on the flag.

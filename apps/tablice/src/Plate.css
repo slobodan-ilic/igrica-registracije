@@ -114,3 +114,33 @@
    Cyrillic line under it, so it takes the full height of the plate's body. */
 .plate--hr .plate__shield { height: calc(var(--plate-h) * 0.66); }
 .plate--hr .plate__stamp { justify-content: center; }
+
+/* ---------- North Macedonia ---------- */
+
+/* A brighter blue than the EU band, and lettering only — no stars, since the
+   country is not in the union. */
+.plate__band--mk { background: linear-gradient(#3a70f0, #255de6); }
+
+.plate__nmk {
+  color: #fff;
+  font-size: calc(var(--plate-h) * 0.17);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* The small red block: the code repeated in gold Cyrillic above the serial's
+   letters, exactly as it is stamped on the real plate. */
+.plate__cyrblock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--plate-h) * 0.01);
+  padding: calc(var(--plate-h) * 0.03) calc(var(--plate-h) * 0.05);
+  background: #ed1c24;
+  color: #ffd400;
+  font-size: calc(var(--plate-h) * 0.17);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+}

@@ -1,5 +1,6 @@
 import { Plate } from './Plate'
 import { PlateHR } from './PlateHR'
+import { PlateMK } from './PlateMK'
 import {
   allOf, cap, plural,
   type Photos, type RegionCollection, type Topic,
@@ -66,6 +67,35 @@ export const TOPICS: Record<string, Topic> = {
     detail: 'takođe',
     showCode: true,
     prompt: (item) => <PlateHR code={item.code} />,
+    hover: (item) => ({ title: item.name, sub: item.covers.join(' · ') }),
+    reveal: (item) => (
+      <span>
+        <b>{item.code}</b> je {item.name}
+      </span>
+    ),
+  },
+
+  makedonija: {
+    id: 'makedonija',
+    label: 'Makedonija',
+    blurb: 'registarske oznake',
+    title: 'Koja je ovo tablica?',
+    card: 'Pogodi kojem području pripada oznaka sa makedonske tablice.',
+    load: async () => ({
+      regions: (await import('../data/makedonija.json')).default as unknown as RegionCollection,
+    }),
+    sample: { code: 'SK', name: 'Skopje', covers: [] },
+    count: 34,
+    offersKim: false,
+    lead: (n) =>
+      'Dobijate oznaku sa makedonske tablice — kliknite na registarsko područje ' +
+      `kojem pripada. ${cap(allOf(n, 'oznaka', 'oznake', 'oznaka'))}, ` +
+      'od Skoplja do Ohrida.',
+    unit: 'područje',
+    allLabel: 'Sve oznake',
+    detail: 'takođe',
+    showCode: true,
+    prompt: (item) => <PlateMK code={item.code} />,
     hover: (item) => ({ title: item.name, sub: item.covers.join(' · ') }),
     reveal: (item) => (
       <span>
