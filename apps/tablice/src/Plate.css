@@ -1,5 +1,9 @@
 .plate {
   --plate-h: clamp(74px, 12vw, 118px);
+  /* The badge between the code and the serial — shield, roundel or block. Every
+     country's is the same height, as they are on the real plates: the emblem
+     occupies one slot whatever is drawn in it. */
+  --emblem-h: calc(var(--plate-h) * 0.44);
   display: inline-flex;
   align-items: stretch;
   height: var(--plate-h);
@@ -80,7 +84,7 @@
 }
 
 .plate__shield {
-  height: calc(var(--plate-h) * 0.44);
+  height: var(--emblem-h);
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 
@@ -110,9 +114,11 @@
   height: auto;
 }
 
-/* The crown makes this emblem taller than Serbia's shield, and there is no
-   Cyrillic line under it, so it takes the full height of the plate's body. */
-.plate--hr .plate__shield { height: calc(var(--plate-h) * 0.66); }
+/* The crown sits above the shield inside the same viewBox, so the height is
+   scaled up by the viewBox's proportions (the shield is 48 of its 64 units).
+   That leaves the šahovnica itself exactly as big as Serbia's shield, with the
+   crown extra on top — which is how the two look side by side in life. */
+.plate--hr .plate__shield { height: calc(var(--emblem-h) * 64 / 48); }
 .plate--hr .plate__stamp { justify-content: center; }
 
 /* ---------- North Macedonia ---------- */
@@ -135,11 +141,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--plate-h) * 0.01);
-  padding: calc(var(--plate-h) * 0.03) calc(var(--plate-h) * 0.05);
+  height: var(--emblem-h);
+  padding: 0 calc(var(--plate-h) * 0.045);
   background: #ed1c24;
   color: #ffd400;
-  font-size: calc(var(--plate-h) * 0.17);
+  font-size: calc(var(--emblem-h) * 0.42);
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: 0.02em;
@@ -156,7 +162,7 @@
 }
 
 .plate__roundel {
-  height: calc(var(--plate-h) * 0.44);
+  height: var(--emblem-h);
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25));
 }
 
