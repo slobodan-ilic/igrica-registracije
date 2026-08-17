@@ -4,8 +4,8 @@ Two map quizzes about Serbia, sharing one engine.
 
 | | what it asks | lives at |
 | --- | --- | --- |
-| [`apps/tablice`](apps/tablice) | a licence-plate code — click the registration area it belongs to | its own domain |
-| [`apps/geografija`](apps/geografija) | a district, river, mountain or spa — click where it is | its own domain |
+| [`apps/tablice`](apps/tablice) | a licence-plate code — click the registration area it belongs to | [igrica-registracije.vercel.app](https://igrica-registracije.vercel.app) |
+| [`apps/geografija`](apps/geografija) | a district, river, mountain or spa — click where it is | [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app) |
 
 They are separate apps with separate domains, but not separate codebases:
 about 85% of the code is the same in both, and it is shared rather than copied.
@@ -59,6 +59,20 @@ copy silently reverted a fix for weeks. Two repos would make that the normal
 working mode rather than an accident.
 
 Splitting later is cheap (`git subtree split` keeps history); merging back is not.
+
+## Deploying
+
+Two Vercel projects, one repo. Each has a config at the root that builds its
+workspace and points at its `dist`, so the whole workspace is uploaded and the
+shared engine resolves:
+
+```sh
+VERCEL_PROJECT_ID=<tablice>    npx vercel deploy --prod --local-config vercel.tablice.json
+VERCEL_PROJECT_ID=<geografija> npx vercel deploy --prod --local-config vercel.geografija.json
+```
+
+Deploying from inside an app directory does not work — npm cannot resolve
+`@kviz/engine` when only that directory is uploaded.
 
 ## Data and licences
 
