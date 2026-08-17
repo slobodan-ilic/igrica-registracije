@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "build:map": "node scripts/build-map.mjs",
-    "build:slike": "node scripts/build-slike.mjs"
+    "build:slike": "node scripts/build-slike.mjs",
+    "build:map-hr": "node scripts/build-map-hr.mjs"
   },
   "dependencies": {
     "@kviz/engine": "*",

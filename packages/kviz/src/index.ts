@@ -18,5 +18,5 @@ export type {
 export { NameCard } from './NameCard'
 export { plural, allOf, cap } from './sr'
 export { joinSr } from './deck'
-export { href, linkProps, setOnlyTopic, hasChooser } from './router'
+export { href, linkProps, setRootTopic, hasChooser } from './router'
 export { setStorageNamespace } from './prefs'

@@ -25,6 +25,12 @@ export type QuizProps = {
   home?: ReactNode
   /** Browser tab title, given the open topic (null on the chooser). */
   title: (topic: Topic | null) => string
+  /**
+   * Heading for the switcher between topics, shown on a topic's menu when the
+   * app has no chooser page — "Druge zemlje" for the plate quiz. Omit it and no
+   * switcher appears.
+   */
+  siblingsLabel?: string
 }
 
 /**
@@ -32,7 +38,7 @@ export type QuizProps = {
  * data. Everything specific to a subject lives in its Topic, so this is the
  * same code whether the answers are licence plates or mountains.
  */
-export function Quiz({ topics, home, title }: QuizProps) {
+export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
   const route = useRoute()
 
   // Every choice the player makes is remembered for next time.
@@ -151,6 +157,8 @@ export function Quiz({ topics, home, title }: QuizProps) {
       {hero && (
         <Setup
           topic={topic}
+          siblings={Object.values(topics).filter((t) => t.id !== topic.id)}
+          siblingsLabel={siblingsLabel}
           hero={hero}
           codes={codes}
           mode={mode}

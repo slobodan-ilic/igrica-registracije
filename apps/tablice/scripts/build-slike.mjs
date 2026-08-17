@@ -6,4 +6,4 @@ import { fileURLToPath } from 'node:url'
 import { buildPhotos, reportPhotos } from '@kviz/build/slike'
 
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-reportPhotos(await buildPhotos({ app, topics: { tablice: 'regions' } }), 70)
+reportPhotos(await buildPhotos({ app, topics: { srbija: 'srbija' } }), 70)

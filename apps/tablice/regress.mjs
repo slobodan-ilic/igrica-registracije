@@ -7,11 +7,11 @@ let fails=0
 const check=(label,ok,extra='')=>{console.log(`  ${ok?'✓':'✗'} ${label}${extra?' — '+extra:''}`); if(!ok)fails++}
 
 // the one topic: a real mouse click scores
-for (const [topic,file,sel] of [['tablice','regions','[data-code]']]){
+for (const [topic,file,sel] of [['srbija','srbija','[data-code]'],['hrvatska','hrvatska','[data-code]']]){
   const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
   await p.setViewport({width:1440,height:900})
   const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>m.type()==='error'&&errs.push(m.text()))
-  await p.goto(`${S}/igra?n=5`,{waitUntil:'networkidle0'}); await pause(800)
+  await p.goto(topic==='srbija'?`${S}/igra?n=5`:`${S}/${topic}/igra?n=5`,{waitUntil:'networkidle0'}); await pause(800)
   const feats=JSON.parse(readFileSync(`data/${file}.json`,'utf8')).features.map(f=>f.properties)
   const asked=await p.evaluate(()=>document.querySelector('.plate__code')?.textContent||document.querySelector('.namecard__title')?.textContent)
   const code=feats.find(f=>f.code===asked||f.name===asked).code
@@ -64,7 +64,7 @@ for(const d of [50,110]){await cdp.send('Input.dispatchTouchEvent',{type:'touchM
 await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await pause(300)
 check('one finger pans while zoomed', tr0!==await t.evaluate(()=>document.querySelector('.map__svg g').getAttribute('transform')))
 await t.evaluate(()=>document.querySelector('.map__reset')?.click()); await pause(400)
-const feats=JSON.parse(readFileSync('data/regions.json','utf8')).features.map(f=>f.properties)
+const feats=JSON.parse(readFileSync('data/srbija.json','utf8')).features.map(f=>f.properties)
 const asked=await t.$eval('.plate__code',e=>e.textContent)
 const pt=await t.evaluate(c=>{const el=document.querySelector(`[data-code="${c}"]`);const r=el.getBoundingClientRect()
   for(let fy=0.2;fy<0.9;fy+=0.05)for(let fx=0.2;fx<0.9;fx+=0.05){const x=r.x+r.width*fx,y=r.y+r.height*fy

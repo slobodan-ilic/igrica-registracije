@@ -94,3 +94,22 @@
 @media (max-width: 560px) {
   .plate { --plate-h: 74px; }
 }
+
+/* ---------- Croatia ---------- */
+
+/* The EU band: darker than Serbia's, with the twelve stars above the country
+   mark rather than a national flag. */
+.plate__band--eu {
+  gap: 4%;
+  background: linear-gradient(#0a3fa8, #003399);
+}
+
+.plate__stars {
+  display: block;
+  width: 66%;
+  height: auto;
+}
+
+/* No Cyrillic line under this shield, so it sits a little larger and centred. */
+.plate--hr .plate__shield { height: calc(var(--plate-h) * 0.5); }
+.plate--hr .plate__stamp { justify-content: center; }

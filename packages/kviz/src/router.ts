@@ -4,10 +4,21 @@ import { useEffect, useState } from 'react'
  * A very small path router. The route space is fixed and shallow, so this earns
  * its keep over a dependency — it is the History API plus a re-render.
  *
- * It has two shapes. An app with several quizzes needs a chooser and a topic in
- * the path (`/`, `/:topic`, `/:topic/igra`). An app with only one quiz has
- * nothing to choose, so the topic drops out of the URL entirely and its menu is
- * the front page (`/`, `/igra`).
+ * It has two shapes, depending on whether one topic is the app's front page:
+ *
+ *   no root topic   /            the chooser
+ *                   /:topic      that topic's menu
+ *                   /:topic/igra a round
+ *
+ *   root topic      /            the root topic's menu — there is no chooser
+ *                   /igra        a round of it
+ *                   /:topic      another topic's menu
+ *                   /:topic/igra a round of that
+ *
+ * The second shape is for an app with a clear flagship: the plate quiz opens on
+ * Serbia at `/`, and Croatia lives at `/hrvatska` rather than both sitting one
+ * click behind a chooser. It also covers the single-topic case, where there is
+ * simply nothing else to route to.
  */
 export type Route =
   | { name: 'home' }
@@ -15,18 +26,18 @@ export type Route =
   | { name: 'game'; topic: string; length: number }
 
 /**
- * The single topic's id when the app has only one, otherwise null. Set once at
- * startup by the app's entry point — it is a build-time fact about the app, not
- * state, so it does not belong in React.
+ * The topic served at `/`, or null when the front page is a chooser. Set once
+ * at startup by the app's entry point — it is a build-time fact about the app,
+ * not state, so it does not belong in React.
  */
-let only: string | null = null
+let root: string | null = null
 
-export const setOnlyTopic = (id: string | null) => {
-  only = id
+export const setRootTopic = (id: string | null) => {
+  root = id
 }
 
-/** Whether there is a chooser to go back to, or just the one quiz. */
-export const hasChooser = () => only === null
+/** Whether there is a chooser to go back to, or a topic sitting at the root. */
+export const hasChooser = () => root === null
 
 const length = (search: string) => {
   const n = Number(new URLSearchParams(search).get('n'))
@@ -34,23 +45,24 @@ const length = (search: string) => {
 }
 
 export function parseRoute(pathname: string, search: string): Route {
-  const parts = pathname.split('/').filter(Boolean)
+  const [topic, section] = pathname.split('/').filter(Boolean)
 
-  if (only) {
-    if (parts[0] === 'igra') return { name: 'game', topic: only, length: length(search) }
-    return { name: 'setup', topic: only }
+  if (root) {
+    if (!topic) return { name: 'setup', topic: root }
+    if (topic === 'igra') return { name: 'game', topic: root, length: length(search) }
+  } else if (!topic) {
+    return { name: 'home' }
   }
 
-  if (parts.length === 0) return { name: 'home' }
-  const [topic, section] = parts
   if (section === 'igra') return { name: 'game', topic, length: length(search) }
   return { name: 'setup', topic }
 }
 
 export const href = {
   home: () => '/',
-  setup: (topic: string) => (only ? '/' : `/${topic}`),
-  game: (topic: string, n: number) => (only ? `/igra?n=${n}` : `/${topic}/igra?n=${n}`),
+  setup: (topic: string) => (topic === root ? '/' : `/${topic}`),
+  game: (topic: string, n: number) =>
+    topic === root ? `/igra?n=${n}` : `/${topic}/igra?n=${n}`,
 }
 
 export function navigate(to: string, replace = false) {

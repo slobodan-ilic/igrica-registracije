@@ -1,4 +1,4 @@
-// Builds data/regions.json: one merged polygon per licence-plate registration area.
+// Builds data/srbija.json: one merged polygon per licence-plate registration area.
 //
 // Sources:
 //   - Municipality boundaries: geoBoundaries SRB ADM2 (OSM-derived, ODbL 1.0)
@@ -231,7 +231,7 @@ if (total < 82000 || total > 95000) {
   process.exit(1)
 }
 mkdirSync(resolve(root, 'data'), { recursive: true })
-writeFileSync(resolve(root, 'data/regions.json'), JSON.stringify(out))
+writeFileSync(resolve(root, 'data/srbija.json'), JSON.stringify(out))
 
 const kimCount = features.filter((f) => f.properties.kim).length
 console.log(

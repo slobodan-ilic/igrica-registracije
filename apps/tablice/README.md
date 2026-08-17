@@ -1,16 +1,28 @@
-# Registarske oznake — kviz
+# Tablice — kviz
 
-A quiz for learning Serbian licence-plate codes. You get a plate, you click
-the registration area it belongs to. Right answers go green and score; wrong
-ones go red, reveal the correct area and show a photograph of it.
+A quiz for learning licence-plate codes. You get a plate, you click the
+registration area it belongs to. Right answers go green and score; wrong ones go
+red, reveal the correct area and show a photograph of it.
+
+Two countries so far, each its own topic with its own map and its own plate:
+
+| | | at |
+| --- | --- | --- |
+| **Srbija** | 81 codes | `/` — the front page |
+| **Hrvatska** | 34 codes | `/hrvatska` |
+
+The interface is Serbian throughout, whichever country you are playing. Serbia
+sits at the root because it is the flagship; every other country gets its own
+path, and the menu carries a switcher between them.
 
 Part of the [kvizovi](../..) workspace: the map, scoring, gestures and design
 come from `@kviz/engine`. This app supplies the plate, the areas and the wording.
 
 ```sh
 npm run dev -w @kviz/tablice
-npm run build:map      # regenerate data/regions.json
-npm run build:slike    # regenerate the photographs
+npm run build:map      # data/srbija.json
+npm run build:map-hr   # data/hrvatska.json
+npm run build:slike    # the photographs
 ```
 
 ## The map
@@ -70,3 +82,38 @@ The palette is taken from the object itself — a plate is white and black with
 the blue of the country band and the red of the shield — so the app looks like
 its subject rather than like a default dark dashboard. That palette is now the
 whole family's, and lives with the engine.
+
+## Croatia
+
+34 codes, from the list HAK publishes and hr.wikipedia tabulates, which gives
+each code its towns and municipalities by name.
+
+The boundaries come from **OpenStreetMap `admin_level=7`** — Croatia's 127
+gradovi and 428 općine — rather than geoBoundaries, which is what Serbia uses.
+geoBoundaries' Croatian layer is missing eight municipalities outright,
+misspells several (`Hvratska Dubica`, `Veliki Pisanica`, `Opicina Pirovac`) and
+models the inhabited islands as islands rather than as the municipalities on
+them. A missing municipality does not leave a visible hole — its territory ends
+up inside a neighbour, which on a map quiz is simply a wrong answer.
+
+Three things make that source work:
+
+- **Rings have to be assembled.** OSM returns a relation as unordered,
+  arbitrarily-directed member ways, so they are chained end-to-end into rings
+  and each hole is assigned to the outer ring containing it.
+- **Same-named municipalities are told apart by county.** There are two
+  Novigrads, two Otoks, two Privlakas and two Sveta Nedeljas; the list
+  distinguishes them exactly as OSM does, by županija, so each municipality is
+  keyed by name *and* county.
+- **Simplification happens in topology space**, on the shared arcs rather than
+  on the finished rings. Two neighbouring areas are built from the very same
+  arc, so they thin identically and cannot drift apart into a sliver of
+  no-man's-land. Straight from OSM the file is 7.4 MB; it ships at 244 KB.
+
+The build fails if any Croatian municipality ends up in no area at all, since
+that is the failure that would otherwise be invisible. Seven municipalities
+created after the list was written are assigned explicitly to the code they were
+split from, and 1,100 islets under 4 km² are dropped as unclickable.
+
+Croatia has no Kosovo switch, and no photographs yet — the app renders fine
+without them.

@@ -257,3 +257,58 @@
   color: var(--muted);
   font-size: 15px;
 }
+
+/* ---------- switching between topics, where there is no chooser ---------- */
+
+.siblings {
+  margin-top: 34px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.siblings__title {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.siblings__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.sibling {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(20 22 26 / 0.05);
+  text-decoration: none;
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.sibling:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* Each shows its own plate, so the difference is visible before you click. */
+.sibling__preview .plate { --plate-h: 42px; }
+
+.sibling__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .siblings { margin-top: 26px; }
+  .sibling__preview .plate { --plate-h: 36px; }
+}

@@ -6,6 +6,10 @@ import type { RegionProps } from './types'
 
 type Props = {
   topic: Topic
+  /** The app's other topics, when there is no chooser page to reach them from. */
+  siblings: Topic[]
+  /** Heading for that switcher — "Druge zemlje", say. Omit to hide it. */
+  siblingsLabel?: string
   hero: RegionProps
   codes: string[]
   mode: 'easy' | 'classic'
@@ -18,7 +22,7 @@ type Props = {
 
 /** One topic's own page: how you want to play it, then start. */
 export function Setup({
-  topic, hero, codes, mode, onMode, withKim, onKim, kimCount, choices,
+  topic, siblings, siblingsLabel, hero, codes, mode, onMode, withKim, onKim, kimCount, choices,
 }: Props) {
   const rounds = [10, 25, codes.length].filter(
     (n, i, a) => a.indexOf(n) === i && n <= codes.length,
@@ -73,6 +77,24 @@ export function Setup({
           </a>
         ))}
       </div>
+
+      {/* With a topic at the root there is no chooser, so the other topics are
+          reached from here. Each shows its own prompt, which for a plate quiz
+          means you can see at a glance what the other country's plate looks
+          like — the thing the quiz is actually about. */}
+      {siblingsLabel && siblings.length > 0 && (
+        <nav className="siblings" aria-label={siblingsLabel}>
+          <h2 className="siblings__title">{siblingsLabel}</h2>
+          <div className="siblings__row">
+            {siblings.map((s) => (
+              <a key={s.id} className="sibling" {...linkProps(href.setup(s.id))}>
+                <span className="sibling__preview">{s.prompt(s.sample)}</span>
+                <span className="sibling__label">{s.label}</span>
+              </a>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
   )
 }

@@ -1,18 +1,23 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Quiz, setOnlyTopic, setStorageNamespace } from '@kviz/engine'
+import { Quiz, setRootTopic, setStorageNamespace } from '@kviz/engine'
 import '@kviz/engine/tokens.css'
-import { TOPICS, TABLICE } from './topics'
+import { TOPICS, ROOT } from './topics'
 
-// One quiz, so the topic drops out of the URL and its menu is the front page.
+// Serbia is the front page; the other countries sit at /hrvatska and so on.
 setStorageNamespace('tablice')
-setOnlyTopic(TABLICE)
+setRootTopic(ROOT)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Quiz
       topics={TOPICS}
-      title={(topic) => (topic ? 'Koja je ovo tablica? · kviz' : 'Registarske oznake · kviz')}
+      siblingsLabel="Druge zemlje"
+      title={(topic) =>
+        topic && topic.id !== ROOT
+          ? `Tablice · ${topic.label}`
+          : 'Registarske oznake · kviz'
+      }
     />
   </StrictMode>,
 )

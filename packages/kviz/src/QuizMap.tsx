@@ -8,10 +8,15 @@ import './QuizMap.css'
 // answerable areas and reports which one the player chose. Any future map quiz
 // (districts, rivers, countries) can reuse it as-is.
 
-// The mapped territory is about 0.70 as wide as it is tall; matching that here
-// lets the SVG scale to the container's full height instead of being letterboxed.
-const W = 612
-const H = 880
+/**
+ * The canvas is sized to the territory rather than fixed, so the SVG scales to
+ * its container instead of being letterboxed. Serbia is tall and narrow,
+ * Croatia is wide — a viewBox tuned for one wastes half the screen on the other.
+ * The longer side is pinned and the shorter follows the shape's own aspect.
+ */
+const LONG = 880
+const MIN_ASPECT = 0.55
+const MAX_ASPECT = 1.9
 const TOUCH = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
 
 type Props = {
@@ -68,13 +73,22 @@ export function QuizMap({
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
 
-  const { shapes, baseShapes, reliefShapes } = useMemo(() => {
+  const { W, H, shapes, baseShapes, reliefShapes } = useMemo(() => {
+    const source = (base ?? regions) as unknown as GeoJSON.FeatureCollection
+
+    // Measure the territory once in a square, then give the canvas its shape.
+    const square = geoMercator().fitExtent([[0, 0], [LONG, LONG]], source)
+    const [[x0, y0], [x1, y1]] = geoPath(square).bounds(source)
+    const aspect = Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, (x1 - x0) / (y1 - y0) || 1))
+    const W = aspect >= 1 ? LONG : Math.round(LONG * aspect)
+    const H = aspect >= 1 ? Math.round(LONG / aspect) : LONG
+
     const projection = geoMercator().fitExtent(
       [
         [10, 10],
         [W - 10, H - 10],
       ],
-      (base ?? regions) as unknown as GeoJSON.FeatureCollection,
+      source,
     )
     const path = geoPath(projection)
     const baseShapes = (base?.features ?? []).map(
@@ -95,7 +109,7 @@ export function QuizMap({
       d: path(f as unknown as GeoJSON.Feature) ?? '',
       centroid: path.centroid(f as unknown as GeoJSON.Feature),
     }))
-    return { shapes, baseShapes, reliefShapes }
+    return { W, H, shapes, baseShapes, reliefShapes }
   }, [regions, base, relief])
 
   const byCode = useMemo(() => new Map(shapes.map((s) => [s.code, s])), [shapes])

@@ -1,21 +1,25 @@
 import { Plate } from './Plate'
-import { allOf, cap, plural, type Topic, type RegionCollection, type Photos } from '@kviz/engine'
+import { PlateHR } from './PlateHR'
+import {
+  allOf, cap, plural,
+  type Photos, type RegionCollection, type Topic,
+} from '@kviz/engine'
 
 /**
- * The one quiz this app offers: a plate code, and the registration area it
- * belongs to. Everything else — the map, scoring, photographs, the Kosovo
- * switch — comes from the engine.
+ * One quiz per country: a plate code, and the registration area it belongs to.
+ * Everything else — the map, scoring, photographs, the Kosovo switch — is the
+ * engine's. The UI is Serbian throughout, whichever country you are playing.
  */
 export const TOPICS: Record<string, Topic> = {
-  tablice: {
-    id: 'tablice',
-    label: 'Tablice',
+  srbija: {
+    id: 'srbija',
+    label: 'Srbija',
     blurb: 'registarske oznake',
     title: 'Koja je ovo tablica?',
     card: 'Pogodi kojem području pripada oznaka sa tablice.',
     load: async () => ({
-      regions: (await import('../data/regions.json')).default as unknown as RegionCollection,
-      photos: (await import('../data/slike-tablice.json')).default as Photos,
+      regions: (await import('../data/srbija.json')).default as unknown as RegionCollection,
+      photos: (await import('../data/slike-srbija.json')).default as Photos,
     }),
     sample: { code: 'NS', name: 'Novi Sad', covers: [] },
     count: 74,
@@ -39,6 +43,37 @@ export const TOPICS: Record<string, Topic> = {
       </span>
     ),
   },
+
+  hrvatska: {
+    id: 'hrvatska',
+    label: 'Hrvatska',
+    blurb: 'registarske oznake',
+    title: 'Koja je ovo tablica?',
+    card: 'Pogodi kojem području pripada oznaka sa hrvatske tablice.',
+    load: async () => ({
+      regions: (await import('../data/hrvatska.json')).default as unknown as RegionCollection,
+    }),
+    sample: { code: 'ZG', name: 'Zagreb', covers: [] },
+    count: 34,
+    // Croatia has no such set, and the switch would be meaningless there.
+    offersKim: false,
+    lead: (n) =>
+      'Dobijate oznaku sa hrvatske tablice — kliknite na registarsko područje ' +
+      `kojem pripada. ${cap(allOf(n, 'oznaka', 'oznake', 'oznaka'))}, ` +
+      'od Zagreba do Dubrovnika.',
+    unit: 'područje',
+    allLabel: 'Sve oznake',
+    detail: 'takođe',
+    showCode: true,
+    prompt: (item) => <PlateHR code={item.code} />,
+    hover: (item) => ({ title: item.name, sub: item.covers.join(' · ') }),
+    reveal: (item) => (
+      <span>
+        <b>{item.code}</b> je {item.name}
+      </span>
+    ),
+  },
 }
 
-export const TABLICE = 'tablice'
+/** The country the app opens on, and therefore the one served at `/`. */
+export const ROOT = 'srbija'
