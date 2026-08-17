@@ -1,0 +1,21 @@
+{
+  "name": "@kviz/tablice",
+  "private": true,
+  "type": "module",
+  "version": "0.5.1",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "build:map": "node scripts/build-map.mjs",
+    "build:slike": "node scripts/build-slike.mjs"
+  },
+  "dependencies": {
+    "@kviz/engine": "*",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@kviz/build": "*"
+  }
+}

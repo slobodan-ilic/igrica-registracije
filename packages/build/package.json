@@ -1,0 +1,19 @@
+{
+  "name": "@kviz/build",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "main": "./index.mjs",
+  "exports": {
+    "./sources": "./sources.mjs",
+    "./geo": "./geo.mjs",
+    "./serbian": "./serbian.mjs",
+    "./wiki": "./wiki.mjs",
+    "./slike": "./slike.mjs"
+  },
+  "dependencies": {
+    "@mapbox/geojson-rewind": "^0.5.2",
+    "d3-geo": "^3.1.1",
+    "sharp": "^0.34.5"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@kviz/geografija",
+  "private": true,
+  "type": "module",
+  "version": "0.5.1",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "build:okruzi": "node scripts/build-okruzi.mjs",
+    "build:rivers": "node scripts/build-rivers.mjs",
+    "build:planine": "node scripts/build-planine.mjs",
+    "build:banje": "node scripts/build-banje.mjs",
+    "build:relief": "node scripts/build-relief.mjs",
+    "build:slike": "node scripts/build-slike.mjs"
+  },
+  "dependencies": {
+    "@kviz/engine": "*",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@kviz/build": "*"
+  }
+}
