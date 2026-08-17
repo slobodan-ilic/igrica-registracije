@@ -13,17 +13,15 @@
 // municipality does not leave a hole — its territory ends up inside a
 // neighbour, which on a map quiz means a wrong answer. OSM has all 555.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { topology } from 'topojson-server'
-import { merge } from 'topojson-client'
+import { geoCentroid } from 'd3-geo'
 import rewind from '@mapbox/geojson-rewind'
 import { key, toLatin } from '@kviz/build/serbian'
 import { overpass, query, source, setApp } from '@kviz/build/sources'
-import { simplify, sqkm, round } from '@kviz/build/geo'
+import { sqkm } from '@kviz/build/geo'
 import { featuresOf, inside } from '@kviz/build/osm'
-import { geoCentroid } from 'd3-geo'
+import { fail, lettersMatch, mergeAreas, writeAreas } from '@kviz/build/areas'
 
 setApp(import.meta.url)
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -41,14 +39,6 @@ const AREA_KM2 = 56594
 
 /** An island smaller than this is a speck at any zoom this map allows. */
 const MIN_ISLAND_KM2 = 4
-
-/**
- * How far a boundary may be moved when thinning it, in degrees — about 150 m.
- * OSM's administrative geometry is far denser than this map can show: Croatia
- * is drawn some 600px wide, so one pixel is already ~800 m. Straight from OSM
- * the file is 7.4 MB.
- */
-const TOLERANCE = 0.0018
 
 /**
  * Where the list and the map name a place differently. Each is a real naming
@@ -200,11 +190,7 @@ for (const [name, code] of Object.entries(SINCE)) {
   assigned.push({ code, feature: unit })
 }
 
-if (missing.length) {
-  console.error(`\n${missing.length} places in the list with no boundary:`)
-  for (const m of missing) console.error(`    ${m}`)
-  process.exit(1)
-}
+if (missing.length) fail('places in the list with no boundary', missing)
 
 /**
  * One topology for the whole country, rather than one per code. Neighbouring
@@ -212,98 +198,50 @@ if (missing.length) {
  * border apart into a sliver of no-man's-land — and the arc is stored once
  * instead of twice.
  */
-const topo = topology({
-  m: { type: 'FeatureCollection', features: assigned.map((a) => a.feature) },
-})
-
-// Thinning the arcs rather than the finished rings is what keeps the borders
-// shut: two neighbouring areas are built from the very same arc, so they are
-// simplified identically and cannot drift apart into a sliver of no-man's-land.
-const points = (arcs) => arcs.reduce((n, a) => n + a.length, 0)
-const before = points(topo.arcs)
-topo.arcs = topo.arcs.map((arc) => {
-  const thin = simplify(arc, TOLERANCE)
-  return thin.length >= 2 ? thin : arc
-})
-const thinned = `${before} boundary points thinned to ${points(topo.arcs)}`
-
-const features = []
-for (const code of [...new Set(assigned.map((a) => a.code))]) {
-  const mine = topo.objects.m.geometries.filter((_, i) => assigned[i].code === code)
-  const geometry = merge(topo, mine)
-
-  // Drop the specks: Croatia has over a thousand islets, and an islet a few
-  // hundred metres across is unclickable and only makes the file bigger.
-  const kept = geometry.coordinates.filter((poly) => {
-    const one = { type: 'Feature', geometry: { type: 'Polygon', coordinates: poly }, properties: {} }
-    return sqkm(rewind(one, true)) >= MIN_ISLAND_KM2
-  })
-
-  const { seat, places } = AREAS.get(code)
-  features.push({
-    type: 'Feature',
-    properties: {
-      code,
-      name: seat,
-      // Shown once answered: the other towns the code covers.
-      covers: places.map(stripQualifier).filter((p) => p !== seat).slice(0, 12),
-      dropped: geometry.coordinates.length - kept.length,
-    },
-    geometry: { type: 'MultiPolygon', coordinates: kept.length ? kept : geometry.coordinates },
-  })
+const mismatched = [...AREAS].filter(([code, { seat }]) => !lettersMatch(code, seat))
+if (mismatched.length) {
+  fail('codes whose letters do not come from their town',
+    mismatched.map(([code, { seat }]) => `${code} -> ${seat}`))
 }
 
 // Anything Croatian still unclaimed would be a hole in the map.
-/**
- * Every code is built from letters of its town's name, in order: ST from SpliT,
- * ČK from ČaKovec, ŽU from ŽUpanja. So the code's letters must appear in the
- * town's name in sequence — which is exactly what catches a seat picked from
- * the wrong end of an alphabetical list ('S' does not appear in "Hvar" at all).
- */
-const inOrder = (code, town) => {
-  const t = key(toLatin(town))
-  let at = -1
-  return [...key(toLatin(code))].every((ch) => (at = t.indexOf(ch, at + 1)) !== -1)
-}
-const mismatched = [...AREAS].filter(([code, { seat }]) => !inOrder(code, seat))
-if (mismatched.length) {
-  console.error('\ncodes whose letters do not come from their town:')
-  for (const [code, { seat }] of mismatched) console.error(`    ${code} -> ${seat}`)
-  process.exit(1)
-}
-
 const orphans = municipalities.filter(
   (f) => !claimed.has(f) && countyOf(f)?.endsWith('županija'),
 )
-
-// --- write -------------------------------------------------------------------
-
-const out = rewind({ type: 'FeatureCollection', features }, true)
-const totalDropped = out.features.reduce((n, f) => n + f.properties.dropped, 0)
-for (const f of out.features) {
-  delete f.properties.dropped
-  f.geometry.coordinates = round(f.geometry.coordinates)
-}
-out.features.sort((a, b) => a.properties.code.localeCompare(b.properties.code, 'hr'))
-
-const total = out.features.reduce((s, f) => s + sqkm(f), 0)
-const drift = Math.abs(total - AREA_KM2) / AREA_KM2
-if (drift > 0.05) {
-  console.error(`Sanity check failed: ${total.toFixed(0)} km2, expected about ${AREA_KM2}`)
-  process.exit(1)
-}
-
-mkdirSync(resolve(app, 'data'), { recursive: true })
-const path = resolve(app, 'data/hrvatska.json')
-writeFileSync(path, JSON.stringify(out))
-
-console.log(`\nOK  ${out.features.length} registration areas`)
-console.log(`    ${thinned}`)
-console.log(`    ${total.toFixed(0)} km2 (${(drift * 100).toFixed(1)}% off Croatia's ${AREA_KM2})`)
-console.log(`    dropped ${totalDropped} islets under ${MIN_ISLAND_KM2} km2`)
 if (orphans.length) {
-  console.error(`\n${orphans.length} Croatian municipalities belong to no code, which would leave holes:`)
-  for (const f of orphans) console.error(`    ${f.properties.name}`)
-  process.exit(1)
+  fail('Croatian municipalities belong to no code, which would leave holes',
+    orphans.map((f) => f.properties.name))
 }
-console.log(`    ${(readFileSync(path).length / 1024).toFixed(0)} KB`)
+
+// --- merge and write ----------------------------------------------------------
+
+const { features, thinned } = mergeAreas(assigned, (code) => {
+  const { seat, places } = AREAS.get(code)
+  return {
+    name: seat,
+    // Shown once answered: the other towns the code covers.
+    covers: places.map(stripQualifier).filter((p) => p !== seat).slice(0, 12),
+  }
+})
+
+// Drop the specks: Croatia has over a thousand islets, and one a few hundred
+// metres across is unclickable and only makes the file bigger.
+let dropped = 0
+for (const f of features) {
+  const kept = f.geometry.coordinates.filter((poly) => {
+    const one = { type: 'Feature', geometry: { type: 'Polygon', coordinates: poly }, properties: {} }
+    return sqkm(rewind(one, true)) >= MIN_ISLAND_KM2
+  })
+  dropped += f.geometry.coordinates.length - kept.length
+  if (kept.length) f.geometry.coordinates = kept
+}
+
+const { count, summary } = writeAreas(app, 'hrvatska', features, {
+  expectKm2: AREA_KM2,
+  sortLocale: 'hr',
+})
+
+console.log(`\nOK  ${count} registration areas`)
+console.log(`    ${thinned}`)
+console.log(`    dropped ${dropped} islets under ${MIN_ISLAND_KM2} km2`)
+console.log(`    ${summary}`)

@@ -1,3 +1,13 @@
+/* Every plate is the same object: a country band, the registration code, an
+   emblem, and the serial. What follows is that shell, then what each country
+   does differently to it.
+
+   The colours here are the plates' own, not the app's tokens: a plate is the
+   thing being drawn, so it keeps its real blue, its real red and its real
+   green. Everything else in the app uses the palette in tokens.css. */
+
+/* ---------- the shell ---------- */
+
 .plate {
   --plate-h: clamp(74px, 12vw, 118px);
   /* The badge between the code and the serial — shield, roundel or block. Every
@@ -12,13 +22,17 @@
   background: linear-gradient(#f7f8f6 0%, #fff 42%, #e9ebe6 100%);
   box-shadow:
     0 0 0 2px #14161a inset,
-    0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 10px 22px -12px rgba(20, 22, 26, 0.55),
-    0 1px 3px rgba(20, 22, 26, 0.2);
+    0 1px 0 rgb(255 255 255 / 0.7) inset,
+    0 10px 22px -12px rgb(20 22 26 / 0.55),
+    0 1px 3px rgb(20 22 26 / 0.2);
   user-select: none;
 }
 
-/* Left blue band: Serbian tricolour above the SRB country mark. */
+@media (max-width: 560px) {
+  .plate { --plate-h: 74px; }
+}
+
+/* The strip down the left. Its colour is the country's, set below. */
 .plate__band {
   display: flex;
   flex-direction: column;
@@ -27,16 +41,10 @@
   gap: 6%;
   width: calc(var(--plate-h) * 0.5);
   border-radius: calc(var(--plate-h) * 0.06);
-  background: linear-gradient(#1b4fa8, #0d3a86);
 }
 
-.plate__flag {
-  display: block;
-  width: 62%;
-  height: auto;
-}
-
-.plate__srb {
+/* The country letters on that strip — SRB, HR, NMK, MNE, SLO. */
+.plate__mark {
   color: #fff;
   font-size: calc(var(--plate-h) * 0.19);
   font-weight: 700;
@@ -76,6 +84,8 @@
 .plate__digits { display: inline-flex; gap: 0.06em; color: #b9bec6; }
 .plate__dash { color: #b9bec6; }
 
+/* The emblem's slot. Serbia stacks its Cyrillic code under the shield, so this
+   is a column; the others put one thing in it. */
 .plate__stamp {
   display: flex;
   flex-direction: column;
@@ -83,11 +93,24 @@
   gap: 2px;
 }
 
-.plate__shield {
+.plate__shield,
+.plate__roundel {
   height: var(--emblem-h);
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25));
 }
 
+/* ---------- Serbia ---------- */
+
+/* The tricolour above the SRB mark. */
+.plate__band--rs { background: linear-gradient(#1b4fa8, #0d3a86); }
+
+.plate__flag {
+  display: block;
+  width: 62%;
+  height: auto;
+}
+
+/* The code again, small, in Cyrillic under the shield. */
 .plate__cyr {
   color: #23262b;
   font-size: calc(var(--plate-h) * 0.15);
@@ -95,14 +118,9 @@
   letter-spacing: 0.04em;
 }
 
-@media (max-width: 560px) {
-  .plate { --plate-h: 74px; }
-}
+/* ---------- Croatia and Slovenia: the union's band ---------- */
 
-/* ---------- Croatia ---------- */
-
-/* The EU band: darker than Serbia's, with the twelve stars above the country
-   mark rather than a national flag. */
+/* Darker than Serbia's, with the twelve stars where a national flag would be. */
 .plate__band--eu {
   gap: 4%;
   background: linear-gradient(#0a3fa8, #003399);
@@ -114,6 +132,8 @@
   height: auto;
 }
 
+/* ---------- Croatia ---------- */
+
 /* The crown sits above the shield inside the same viewBox, so the height is
    scaled up by the viewBox's proportions (the shield is 48 of its 64 units).
    That leaves the šahovnica itself exactly as big as Serbia's shield, with the
@@ -123,16 +143,13 @@
 
 /* ---------- North Macedonia ---------- */
 
-/* A brighter blue than the EU band, and lettering only — no stars, since the
-   country is not in the union. */
+/* A brighter blue than the union's, and lettering only — no stars, since the
+   country is not a member. */
 .plate__band--mk { background: linear-gradient(#3a70f0, #255de6); }
 
-.plate__nmk {
-  color: #fff;
-  font-size: calc(var(--plate-h) * 0.17);
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
+/* The red block is its own box and needs no centring column around it, so the
+   shell's wrapper is taken out of the layout rather than left to nudge it. */
+.plate--mk .plate__stamp { display: contents; }
 
 /* The small red block: the code repeated in gold Cyrillic above the serial's
    letters, exactly as it is stamped on the real plate. */
@@ -161,13 +178,15 @@
   background: linear-gradient(#0a44a8, #003399);
 }
 
-.plate__roundel {
-  height: var(--emblem-h);
-  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25));
-}
-
 /* Two letters then three digits, with a gap rather than a dash. */
 .plate--me .plate__digits { gap: 0.32em; }
+
+/* Both of these fit three letters on a narrower band than Serbia's. */
+.plate--mk .plate__mark,
+.plate--me .plate__mark {
+  font-size: calc(var(--plate-h) * 0.17);
+  letter-spacing: 0.03em;
+}
 
 /* ---------- Slovenia ---------- */
 

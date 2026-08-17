@@ -19,7 +19,23 @@ sits at the root because it is the flagship; every other country gets its own
 path, and the menu carries a switcher between them.
 
 Part of the [kvizovi](../..) workspace: the map, scoring, gestures and design
-come from `@kviz/engine`. This app supplies the plate, the areas and the wording.
+come from `@kviz/engine`. This app supplies the plates, the areas and the wording.
+
+```
+src/
+  Plate.tsx      the shell every plate is built from — band, code, emblem,
+                 serial — plus the EU stars two of them share
+  PlateRS/HR/    one file per country: its emblem, and which pieces it passes
+  MK/ME/SI.tsx   to the shell
+  Plate.css      the shell's styles, then what each country changes
+  topics.tsx     one `country({...})` per quiz; everything the five say the
+                 same way is written once
+scripts/
+  build-map*.mjs one per country. They differ entirely in how they work out
+                 which municipalities a code covers, and not at all after
+                 that — the merge, thinning, area check and write are
+                 @kviz/build/areas
+```
 
 ```sh
 npm run dev -w @kviz/tablice

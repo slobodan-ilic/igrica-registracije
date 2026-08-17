@@ -1,4 +1,4 @@
-import './Plate.css'
+import { Plate, Serial } from './Plate'
 
 const GOLD = '#e3b23c'
 const GOLD_DARK = '#b8860b'
@@ -44,28 +44,19 @@ function Emblem() {
 }
 
 /**
- * A Montenegrin plate: the blue country band with MNE and nothing above it —
- * Montenegro is not in the union, so the stars' place is left empty — then the
- * municipality code, the arms, and the serial left faint. The serial runs two
- * letters then three digits here, unlike its neighbours.
+ * A Montenegrin plate: the union's blue band, but with the stars' place left
+ * empty — Montenegro is a candidate, not a member — then the state arms. The
+ * serial runs two letters then three digits, unlike its neighbours.
  */
 export function PlateME({ code }: { code: string }) {
   return (
-    <div className="plate plate--me" role="img" aria-label={`Registarska tablica ${code}`}>
-      <div className="plate__band plate__band--me">
-        <span className="plate__nmk">MNE</span>
-      </div>
-
-      <div className="plate__body">
-        <span className="plate__code" key={code}>{code}</span>
-        <span className="plate__stamp">
-          <Emblem />
-        </span>
-        <span className="plate__digits">
-          <span className="plate__dots">AA</span>
-          <span className="plate__dots">000</span>
-        </span>
-      </div>
-    </div>
+    <Plate
+      country="me"
+      bandStyle="me"
+      code={code}
+      band={<span className="plate__mark">MNE</span>}
+      emblem={<Emblem />}
+      serial={<Serial parts={['AA', '000']} />}
+    />
   )
 }

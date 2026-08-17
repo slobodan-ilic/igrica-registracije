@@ -5,20 +5,17 @@
 //   - Code -> municipality mapping: sr.wikipedia "Регистарске ознаке у Србији",
 //     which cites Правилник о регистрацији моторних и прикључних возила, Прилог 1 (5. мај 2025)
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { geoArea } from 'd3-geo'
 import { topology } from 'topojson-server'
 import { merge } from 'topojson-client'
 import rewind from '@mapbox/geojson-rewind'
 import { key, toLatin } from '@kviz/build/serbian'
-import { CACHE } from '@kviz/build/sources'
+import { source } from '@kviz/build/sources'
+import { round, sqkm } from '@kviz/build/geo'
 
-const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '..')
-// Shared with every other build script, so a source is downloaded once.
-const SCRATCH = process.env.SRC_DIR ?? CACHE
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 /**
  * Kosovo's municipalities keyed to the registration areas Serbia's list uses.
@@ -94,22 +91,9 @@ const SOURCES = {
     'https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/XKX/ADM2/geoBoundaries-XKX-ADM2_simplified.geojson',
 }
 
-/** Fetch the upstream sources once and cache them next to this script. */
-async function source(name) {
-  const path = resolve(SCRATCH, name)
-  if (existsSync(path)) return readFileSync(path, 'utf8')
-  console.log(`fetching ${name}...`)
-  const res = await fetch(SOURCES[name])
-  if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`)
-  const body = await res.text()
-  mkdirSync(SCRATCH, { recursive: true })
-  writeFileSync(path, body)
-  return body
-}
-
-const wikitext = await source('wiki_raw.txt')
-const geo = JSON.parse(await source('srb_adm2.geojson'))
-const kosovoGeo = JSON.parse(await source('xkx_adm2.geojson'))
+const wikitext = await source('wiki_raw.txt', SOURCES['wiki_raw.txt'])
+const geo = JSON.parse(await source('srb_adm2.geojson', SOURCES['srb_adm2.geojson']))
+const kosovoGeo = JSON.parse(await source('xkx_adm2.geojson', SOURCES['xkx_adm2.geojson']))
 // One collection, so the shared Serbia/Kosovo border quantises identically.
 const allGeo = {
   type: 'FeatureCollection',
@@ -204,7 +188,7 @@ for (const f of features) {
     for (let i = rings.length - 1; i >= 1; i--) {
       // Winding here is still the source's, so measure both sides of the ring
       // and take the smaller — that is the pinhole's real footprint either way.
-      const a = geoArea({ type: 'Polygon', coordinates: [rings[i]] }) * 6371 * 6371
+      const a = sqkm({ type: 'Polygon', coordinates: [rings[i]] })
       if (Math.min(a, SPHERE - a) < 20) {
         rings.splice(i, 1)
         dropped++
@@ -214,16 +198,12 @@ for (const f of features) {
 }
 
 // ~11 m precision is far below what the map renders; it roughly halves the payload.
-const round = (v) =>
-  Array.isArray(v) ? v.map(round) : Math.round(v * 1e4) / 1e4
-for (const f of features) f.geometry.coordinates = round(f.geometry.coordinates)
-
-// The source data (and so topojson.merge's output) uses clockwise exterior rings.
-// d3-geo reads those spherically as "everything except this polygon" and fills the
-// whole globe, so flip the winding on the way out.
+// Winding is decided at full precision and only then rounded: rounding first
+// can flip the signed area of a near-degenerate ring, which flips rewind's
+// verdict and turns a hole into fill.
 const out = rewind({ type: 'FeatureCollection', features }, true)
+for (const f of out.features) f.geometry.coordinates = round(f.geometry.coordinates)
 
-const sqkm = (f) => geoArea(f) * 6371 * 6371
 const total = out.features.reduce((s, f) => s + sqkm(f), 0)
 // Serbia proper ~77,500 km2 plus Kosovo ~10,900 km2.
 if (total < 82000 || total > 95000) {

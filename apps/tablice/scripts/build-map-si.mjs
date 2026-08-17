@@ -23,17 +23,13 @@
 // The result is then checked outright: all 212 občine must be assigned, each to
 // exactly one unit.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { topology } from 'topojson-server'
-import { merge } from 'topojson-client'
-import rewind from '@mapbox/geojson-rewind'
-import { key, toLatin } from '@kviz/build/serbian'
 import polygonClipping from 'polygon-clipping'
+import { key, toLatin } from '@kviz/build/serbian'
 import { json, overpass, query, source, setApp } from '@kviz/build/sources'
-import { simplify, sqkm, round } from '@kviz/build/geo'
 import { featuresOf, inside } from '@kviz/build/osm'
+import { fail, mergeAreas, writeAreas } from '@kviz/build/areas'
 
 setApp(import.meta.url)
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -48,9 +44,6 @@ const UNITS =
   '&action=raw'
 /** Slovenia's real area, as the sanity check. */
 const AREA_KM2 = 20271
-
-/** About 150 m — see build-map-hr.mjs for why boundaries are thinned at all. */
-const TOLERANCE = 0.0018
 
 /**
  * Slovenia's coastal občine take in the water it claims in the Bay of Piran, so
@@ -100,18 +93,12 @@ for (const line of table.split('\n')) {
 
 const unitCount = [...AREAS.values()].reduce((n, a) => n + a.units.length, 0)
 console.log(`${AREAS.size} codes over ${unitCount} upravne enote`)
-if (unitCount !== 58) {
-  console.error(`expected 58 upravne enote, parsed ${unitCount}`)
-  process.exit(1)
-}
+if (unitCount !== 58) fail('upravne enote parsed, expected 58', [String(unitCount)])
 
 // --- unit -> občine ----------------------------------------------------------
 
 const obcine = featuresOf(await overpass('si_obcine_geom.json', query('slovenija.overpassql')))
-if (obcine.length !== 212) {
-  console.error(`expected 212 občine, got ${obcine.length}`)
-  process.exit(1)
-}
+if (obcine.length !== 212) fail('občine found, expected 212', [String(obcine.length)])
 const obcinaAt = (point) =>
   obcine.find((f) => f.geometry.coordinates.some(([ring]) => inside(point, ring)))?.properties.name
 
@@ -185,20 +172,12 @@ for (const [unit, set] of unitObcine) {
     else owner.set(o, unit)
   }
 }
-if (contested.length) {
-  console.error(`\n${contested.length} občine claimed by two units:`)
-  for (const c of contested.slice(0, 20)) console.error(`    ${c}`)
-  process.exit(1)
-}
+if (contested.length) fail('občine claimed by two units', contested.slice(0, 20))
 
 const unassigned = obcine
   .map((f) => f.properties.name)
   .filter((n) => !owner.has(norm(n)))
-if (unassigned.length) {
-  console.error(`\n${unassigned.length} of ${obcine.length} občine belong to no unit:`)
-  for (const n of unassigned) console.error(`    ${n}`)
-  process.exit(1)
-}
+if (unassigned.length) fail(`of ${obcine.length} občine belong to no unit`, unassigned)
 console.log(`all ${obcine.length} občine assigned, none contested`)
 
 // --- merge -------------------------------------------------------------------
@@ -216,37 +195,16 @@ for (const [code, { units }] of AREAS) {
     for (const o of set) assigned.push({ code, feature: byNorm.get(o) })
   }
 }
-if (missingUnits.length) {
-  console.error(`\nunits with no občine: ${missingUnits.join(', ')}`)
-  process.exit(1)
-}
+if (missingUnits.length) fail('units with no občine', missingUnits)
 
-const topo = topology({
-  m: { type: 'FeatureCollection', features: assigned.map((a) => a.feature) },
-})
-const points = (arcs) => arcs.reduce((n, a) => n + a.length, 0)
-const before = points(topo.arcs)
-topo.arcs = topo.arcs.map((arc) => {
-  const thin = simplify(arc, TOLERANCE)
-  return thin.length >= 2 ? thin : arc
-})
-const thinned = `${before} boundary points thinned to ${points(topo.arcs)}`
-
-const features = []
-for (const code of AREAS.keys()) {
-  const mine = topo.objects.m.geometries.filter((_, i) => assigned[i].code === code)
+const { features, thinned } = mergeAreas(assigned, (code) => {
   const { seat, units } = AREAS.get(code)
-  features.push({
-    type: 'Feature',
-    properties: {
-      code,
-      name: seat,
-      // Shown once answered: the other units the code covers.
-      covers: units.filter((u) => u !== seat).slice(0, 12),
-    },
-    geometry: merge(topo, mine),
-  })
-}
+  return {
+    name: seat,
+    // Shown once answered: the other units the code covers.
+    covers: units.filter((u) => u !== seat).slice(0, 12),
+  }
+})
 
 // --- clip to land -------------------------------------------------------------
 
@@ -261,22 +219,11 @@ for (const f of features) {
 
 // --- write -------------------------------------------------------------------
 
-const out = rewind({ type: 'FeatureCollection', features }, true)
-for (const f of out.features) f.geometry.coordinates = round(f.geometry.coordinates)
-out.features.sort((a, b) => a.properties.code.localeCompare(b.properties.code, 'sl'))
+const { count, summary } = writeAreas(app, 'slovenija', features, {
+  expectKm2: AREA_KM2,
+  sortLocale: 'sl',
+})
 
-const total = out.features.reduce((s, f) => s + sqkm(f), 0)
-const drift = Math.abs(total - AREA_KM2) / AREA_KM2
-if (drift > 0.05) {
-  console.error(`Sanity check failed: ${total.toFixed(0)} km2, expected about ${AREA_KM2}`)
-  process.exit(1)
-}
-
-mkdirSync(resolve(app, 'data'), { recursive: true })
-const path = resolve(app, 'data/slovenija.json')
-writeFileSync(path, JSON.stringify(out))
-
-console.log(`\nOK  ${out.features.length} registration areas`)
+console.log(`\nOK  ${count} registration areas`)
 console.log(`    ${thinned}`)
-console.log(`    ${total.toFixed(0)} km2 (${(drift * 100).toFixed(1)}% off ${AREA_KM2})`)
-console.log(`    ${(readFileSync(path).length / 1024).toFixed(0)} KB`)
+console.log(`    ${summary}`)

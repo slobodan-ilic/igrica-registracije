@@ -9,16 +9,12 @@
 // covers exactly one municipality, so there is nothing to group. The borders are
 // still thinned through a shared topology so neighbours cannot part company.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { topology } from 'topojson-server'
-import { merge } from 'topojson-client'
-import rewind from '@mapbox/geojson-rewind'
 import { key, toLatin } from '@kviz/build/serbian'
 import { overpass, query, source, setApp } from '@kviz/build/sources'
-import { simplify, sqkm, round } from '@kviz/build/geo'
 import { featuresOf } from '@kviz/build/osm'
+import { fail, lettersMatch, mergeAreas, writeAreas } from '@kviz/build/areas'
 
 setApp(import.meta.url)
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -30,9 +26,6 @@ const WIKI =
 
 /** Montenegro's real area, as the sanity check. */
 const AREA_KM2 = 13812
-
-/** About 150 m — see build-map-hr.mjs for why boundaries are thinned at all. */
-const TOLERANCE = 0.0018
 
 /**
  * OSM names each unit by what it is: most are an opština, Podgorica is the
@@ -77,71 +70,27 @@ for (const [code, name] of AREAS) {
   assigned.push({ code, name, feature: unit })
 }
 
-if (missing.length) {
-  console.error(`\n${missing.length} codes with no boundary:`)
-  for (const m of missing) console.error(`    ${m}`)
-  process.exit(1)
-}
+if (missing.length) fail('codes with no boundary', missing)
 
 // Every municipality must have a code, or the map has a hole in it.
 const claimed = new Set(assigned.map((a) => a.feature))
 const orphans = [...units.values()].filter((f) => !claimed.has(f))
-if (orphans.length) {
-  console.error(`\n${orphans.length} municipalities belong to no code:`)
-  for (const f of orphans) console.error(`    ${f.properties.name}`)
-  process.exit(1)
-}
+if (orphans.length) fail('municipalities belong to no code', orphans.map((f) => f.properties.name))
 
-/** The code's letters must come from its municipality: PG from PodGorica. */
-const inOrder = (code, name) => {
-  const n = key(toLatin(name))
-  let at = -1
-  return [...key(toLatin(code))].every((ch) => (at = n.indexOf(ch, at + 1)) !== -1)
-}
-const mismatched = assigned.filter(({ code, name }) => !inOrder(code, name))
+const mismatched = assigned.filter(({ code, name }) => !lettersMatch(code, name))
 if (mismatched.length) {
-  console.error('\ncodes whose letters do not come from their municipality:')
-  for (const { code, name } of mismatched) console.error(`    ${code} -> ${name}`)
-  process.exit(1)
+  fail('codes whose letters do not come from their municipality',
+    mismatched.map(({ code, name }) => `${code} -> ${name}`))
 }
 
-// --- merge -------------------------------------------------------------------
+// --- merge and write ----------------------------------------------------------
 
-const topo = topology({
-  m: { type: 'FeatureCollection', features: assigned.map((a) => a.feature) },
+const { features, thinned } = mergeAreas(assigned, (code) => {
+  const { name } = assigned.find((a) => a.code === code)
+  return { name, covers: [] }
 })
-const points = (arcs) => arcs.reduce((n, a) => n + a.length, 0)
-const before = points(topo.arcs)
-topo.arcs = topo.arcs.map((arc) => {
-  const thin = simplify(arc, TOLERANCE)
-  return thin.length >= 2 ? thin : arc
-})
-const thinned = `${before} boundary points thinned to ${points(topo.arcs)}`
+const { count, summary } = writeAreas(app, 'crnagora', features, { expectKm2: AREA_KM2 })
 
-const features = assigned.map(({ code, name }, i) => ({
-  type: 'Feature',
-  properties: { code, name, covers: [] },
-  geometry: merge(topo, [topo.objects.m.geometries[i]]),
-}))
-
-// --- write -------------------------------------------------------------------
-
-const out = rewind({ type: 'FeatureCollection', features }, true)
-for (const f of out.features) f.geometry.coordinates = round(f.geometry.coordinates)
-out.features.sort((a, b) => a.properties.code.localeCompare(b.properties.code, 'sr'))
-
-const total = out.features.reduce((s, f) => s + sqkm(f), 0)
-const drift = Math.abs(total - AREA_KM2) / AREA_KM2
-if (drift > 0.05) {
-  console.error(`Sanity check failed: ${total.toFixed(0)} km2, expected about ${AREA_KM2}`)
-  process.exit(1)
-}
-
-mkdirSync(resolve(app, 'data'), { recursive: true })
-const path = resolve(app, 'data/crnagora.json')
-writeFileSync(path, JSON.stringify(out))
-
-console.log(`\nOK  ${out.features.length} registration areas`)
+console.log(`\nOK  ${count} registration areas`)
 console.log(`    ${thinned}`)
-console.log(`    ${total.toFixed(0)} km2 (${(drift * 100).toFixed(1)}% off ${AREA_KM2})`)
-console.log(`    ${(readFileSync(path).length / 1024).toFixed(0)} KB`)
+console.log(`    ${summary}`)

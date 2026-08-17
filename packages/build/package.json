@@ -10,11 +10,14 @@
     "./serbian": "./serbian.mjs",
     "./wiki": "./wiki.mjs",
     "./slike": "./slike.mjs",
-    "./osm": "./osm.mjs"
+    "./osm": "./osm.mjs",
+    "./areas": "./areas.mjs"
   },
   "dependencies": {
     "@mapbox/geojson-rewind": "^0.5.2",
     "d3-geo": "^3.1.1",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "topojson-server": "^3.0.1",
+    "topojson-client": "^3.1.0"
   }
 }

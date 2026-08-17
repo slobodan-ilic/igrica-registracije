@@ -11,17 +11,13 @@
 // Names arrive in Cyrillic on both sides and are transliterated for display,
 // so the app stays in Latin script like the rest of it.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { topology } from 'topojson-server'
-import { merge } from 'topojson-client'
-import rewind from '@mapbox/geojson-rewind'
+import { geoCentroid } from 'd3-geo'
 import { key, toLatin } from '@kviz/build/serbian'
 import { overpass, query, source, setApp } from '@kviz/build/sources'
-import { simplify, sqkm, round } from '@kviz/build/geo'
 import { featuresOf, inside } from '@kviz/build/osm'
-import { geoCentroid } from 'd3-geo'
+import { fail, lettersMatch, mergeAreas, writeAreas } from '@kviz/build/areas'
 
 setApp(import.meta.url)
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -33,9 +29,6 @@ const WIKI =
 
 /** North Macedonia's real area, as the sanity check. */
 const AREA_KM2 = 25713
-
-/** About 150 m — see build-map-hr.mjs for why boundaries are thinned at all. */
-const TOLERANCE = 0.0018
 
 /**
  * Where the list and the map spell a municipality differently. The map's
@@ -112,11 +105,7 @@ for (const [code, { places }] of AREAS) {
   }
 }
 
-if (missing.length) {
-  console.error(`\n${missing.length} places in the list with no boundary:`)
-  for (const m of missing) console.error(`    ${m}`)
-  process.exit(1)
-}
+if (missing.length) fail('places in the list with no boundary', missing)
 
 /**
  * The ten municipalities inside the City of Skopje are covered by that one
@@ -137,80 +126,31 @@ const orphans = [...units.values()].filter(
   (f) => !claimed.has(f) && f !== skopje && !inSkopje(f),
 )
 if (orphans.length) {
-  console.error(`\n${orphans.length} municipalities belong to no code, which would leave holes:`)
-  for (const f of orphans) console.error(`    ${f.properties.name}`)
-  process.exit(1)
+  fail('municipalities belong to no code, which would leave holes',
+    orphans.map((f) => f.properties.name))
 }
 
-/**
- * Every code is built from letters of its region's name, in order: BT from
- * BiTola, SK from SKopje, DH from Demir Hisar. Checking it catches a region
- * paired with the wrong code, which is otherwise invisible.
- */
-const inOrder = (code, region) => {
-  const r = key(toLatin(region))
-  let at = -1
-  return [...key(toLatin(code))].every((ch) => (at = r.indexOf(ch, at + 1)) !== -1)
-}
-const mismatched = [...AREAS].filter(([code, { region }]) => !inOrder(code, region))
+const mismatched = [...AREAS].filter(([code, { region }]) => !lettersMatch(code, region))
 if (mismatched.length) {
-  console.error('\ncodes whose letters do not come from their region:')
-  for (const [code, { region }] of mismatched) console.error(`    ${code} -> ${region}`)
-  process.exit(1)
+  fail('codes whose letters do not come from their region',
+    mismatched.map(([code, { region }]) => `${code} -> ${region}`))
 }
 
-// --- merge -------------------------------------------------------------------
+// --- merge and write ----------------------------------------------------------
 
-// One topology for the whole country, so neighbouring areas share their border
-// arc and thin identically rather than parting into a sliver of no-man's-land.
-const topo = topology({
-  m: { type: 'FeatureCollection', features: assigned.map((a) => a.feature) },
-})
-const points = (arcs) => arcs.reduce((n, a) => n + a.length, 0)
-const before = points(topo.arcs)
-topo.arcs = topo.arcs.map((arc) => {
-  const thin = simplify(arc, TOLERANCE)
-  return thin.length >= 2 ? thin : arc
-})
-const thinned = `${before} boundary points thinned to ${points(topo.arcs)}`
-
-const features = []
-for (const code of [...new Set(assigned.map((a) => a.code))]) {
-  const mine = topo.objects.m.geometries.filter((_, i) => assigned[i].code === code)
+const { features, thinned } = mergeAreas(assigned, (code) => {
   const { region, places } = AREAS.get(code)
-  features.push({
-    type: 'Feature',
-    properties: {
-      code,
-      name: region,
-      // Shown once answered: the other municipalities the code covers.
-      covers: places
-        .map((p) => toLatin(stripPrefix(p)))
-        .filter((p) => p !== region)
-        .slice(0, 12),
-    },
-    geometry: merge(topo, mine),
-  })
-}
+  return {
+    name: region,
+    // Shown once answered: the other municipalities the code covers.
+    covers: places.map((p) => toLatin(stripPrefix(p))).filter((p) => p !== region).slice(0, 12),
+  }
+})
+const { count, summary } = writeAreas(app, 'makedonija', features, {
+  expectKm2: AREA_KM2,
+  sortLocale: 'mk',
+})
 
-// --- write -------------------------------------------------------------------
-
-const out = rewind({ type: 'FeatureCollection', features }, true)
-for (const f of out.features) f.geometry.coordinates = round(f.geometry.coordinates)
-out.features.sort((a, b) => a.properties.code.localeCompare(b.properties.code, 'mk'))
-
-const total = out.features.reduce((s, f) => s + sqkm(f), 0)
-const drift = Math.abs(total - AREA_KM2) / AREA_KM2
-if (drift > 0.05) {
-  console.error(`Sanity check failed: ${total.toFixed(0)} km2, expected about ${AREA_KM2}`)
-  process.exit(1)
-}
-
-mkdirSync(resolve(app, 'data'), { recursive: true })
-const path = resolve(app, 'data/makedonija.json')
-writeFileSync(path, JSON.stringify(out))
-
-console.log(`\nOK  ${out.features.length} registration areas`)
+console.log(`\nOK  ${count} registration areas`)
 console.log(`    ${thinned}`)
-console.log(`    ${total.toFixed(0)} km2 (${(drift * 100).toFixed(1)}% off ${AREA_KM2})`)
-console.log(`    ${(readFileSync(path).length / 1024).toFixed(0)} KB`)
+console.log(`    ${summary}`)

@@ -1,26 +1,4 @@
-import './Plate.css'
-
-/** A five-pointed star in a 10x10 box, point up — the EU's, drawn once. */
-const STAR =
-  'M5 0.6 6.35 4.35 10.2 4.35 7.1 6.72 8.27 10.5 5 8.2 1.73 10.5 2.9 6.72 -0.2 4.35 3.65 4.35Z'
-
-/** The twelve stars of the European flag, in a circle on the blue band. */
-function EuStars() {
-  return (
-    <svg className="plate__stars" viewBox="0 0 100 100" aria-hidden="true">
-      {Array.from({ length: 12 }, (_, i) => {
-        const angle = (i * Math.PI) / 6
-        const x = 50 + 33 * Math.sin(angle)
-        const y = 50 - 33 * Math.cos(angle)
-        return (
-          <g key={i} transform={`translate(${x - 8.5} ${y - 8.5}) scale(1.7)`}>
-            <path d={STAR} fill="#ffcc00" />
-          </g>
-        )
-      })}
-    </svg>
-  )
-}
+import { EuStars, Plate, Serial } from './Plate'
 
 const AZURE = '#1c4fa1'
 const GOLD = '#f2c200'
@@ -139,29 +117,21 @@ function CoatOfArms() {
   )
 }
 
-/**
- * A Croatian plate: the EU band, the town code, the šahovnica as separator, and
- * the number itself left faint because it is not what is being asked.
- */
+/** A Croatian plate: the EU band, and the šahovnica under its crown. */
 export function PlateHR({ code }: { code: string }) {
   return (
-    <div className="plate plate--hr" role="img" aria-label={`Registracijska oznaka ${code}`}>
-      <div className="plate__band plate__band--eu">
-        <EuStars />
-        <span className="plate__srb">HR</span>
-      </div>
-
-      <div className="plate__body">
-        <span className="plate__code" key={code}>{code}</span>
-        <span className="plate__stamp">
-          <CoatOfArms />
-        </span>
-        <span className="plate__digits">
-          <span className="plate__dots">000</span>
-          <span className="plate__dash">-</span>
-          <span className="plate__dots">AA</span>
-        </span>
-      </div>
-    </div>
+    <Plate
+      country="hr"
+      bandStyle="eu"
+      code={code}
+      band={
+        <>
+          <EuStars />
+          <span className="plate__mark">HR</span>
+        </>
+      }
+      emblem={<CoatOfArms />}
+      serial={<Serial parts={['000', 'AA']} separator="-" />}
+    />
   )
 }
