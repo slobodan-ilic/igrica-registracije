@@ -4,7 +4,7 @@ Two map quizzes about Serbia, sharing one engine.
 
 | | what it asks | lives at |
 | --- | --- | --- |
-| [`apps/tablice`](apps/tablice) | a licence-plate code — click the registration area it belongs to | [igrica-registracije.vercel.app](https://igrica-registracije.vercel.app) |
+| [`apps/tablice`](apps/tablice) | a licence-plate code — click the registration area it belongs to | [tablice.vercel.app](https://tablice.vercel.app) |
 | [`apps/geografija`](apps/geografija) | a district, river, mountain or spa — click where it is | [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app) |
 
 They are separate apps with separate domains, but not separate codebases:
@@ -70,6 +70,10 @@ shared engine resolves:
 VERCEL_PROJECT_ID=<tablice>    npx vercel deploy --prod --local-config vercel.tablice.json
 VERCEL_PROJECT_ID=<geografija> npx vercel deploy --prod --local-config vercel.geografija.json
 ```
+
+The projects are `tablice` and `geografija-srbija`. The plate app's old URL,
+`igrica-registracije.vercel.app`, 308-redirects to the new one, so links shared
+before the rename still work.
 
 Deploying from inside an app directory does not work — npm cannot resolve
 `@kviz/engine` when only that directory is uploaded.
