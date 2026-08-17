@@ -1,5 +1,5 @@
 import { BackLink } from './Chrome'
-import { href, linkProps } from './router'
+import { hasChooser, href, linkProps } from './router'
 import { plural } from './sr'
 import type { Topic } from './topic'
 import type { RegionProps } from './types'
@@ -26,7 +26,8 @@ export function Setup({
 
   return (
     <div className="intro">
-      <BackLink to={href.home()} label="Sve igre" />
+      {/* With one quiz this page is the front page, so there is nowhere back. */}
+      {hasChooser() && <BackLink to={href.home()} label="Sve igre" />}
 
       <div className="intro__hero">{topic.prompt(hero)}</div>
       <p className="intro__eyebrow">{topic.blurb}</p>
