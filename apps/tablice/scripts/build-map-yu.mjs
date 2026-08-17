@@ -19,6 +19,7 @@
 import { key, toLatin } from '@kviz/build/serbian'
 import { json, overpass, query, source, setApp } from '@kviz/build/sources'
 import { simplify, writeData } from '@kviz/build/geo'
+import { inside } from '@kviz/build/osm'
 import { fail } from '@kviz/build/areas'
 
 setApp(import.meta.url)
@@ -30,6 +31,10 @@ const WIKI =
 
 const BOUNDARIES = (iso) =>
   `https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/${iso}/ADM0/geoBoundaries-${iso}-ADM0_simplified.geojson`
+
+/** The same borders unthinned, which is what a town has to be tested against. */
+const EXACT = (iso) =>
+  `https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/${iso}/ADM0/geoBoundaries-${iso}-ADM0.geojson`
 
 /** The successor states. Together they are the SFRJ, border for border. */
 const REPUBLICS = ['SVN', 'HRV', 'BIH', 'SRB', 'MNE', 'MKD', 'XKX']
@@ -125,10 +130,13 @@ for (const d of dropped) console.log(`    not in ${SNAPSHOT}: ${d}`)
 const places = await overpass('yu_places.json', query('jugoslavija.overpassql'))
 
 // Keyed by every name a place carries, transliterated: OSM holds Ужице and
-// Битола in the local script, and the list is in Latin.
+// Битола in the local script, and the list is in Latin. Every place of that
+// name is kept, not the first one found — these names repeat across the
+// country, and which Požega or which Korenica is meant is settled below by the
+// republic rather than here by whichever the query happened to return first.
 const RANK = { city: 3, town: 2, village: 1 }
 const byName = new Map()
-for (const e of [...places.elements].sort((a, b) => (RANK[b.tags.place] ?? 0) - (RANK[a.tags.place] ?? 0))) {
+for (const e of places.elements) {
   for (const name of [
     e.tags?.name,
     e.tags?.['name:sr-Latn'],
@@ -139,19 +147,134 @@ for (const e of [...places.elements].sort((a, b) => (RANK[b.tags.place] ?? 0) - 
   ]) {
     if (!name) continue
     const k = key(toLatin(name.split('/')[0].trim()))
-    if (k && !byName.has(k)) byName.set(k, e)
+    if (!k) continue
+    const found = byName.get(k) ?? []
+    if (!found.includes(e)) found.push(e)
+    byName.set(k, found)
   }
 }
 
+// --- which republic a place is in ---------------------------------------------
+
+/**
+ * The successor state a point falls in, which is the republic it was in: none
+ * of the internal borders moved. Serbia is the one that takes two, since its
+ * autonomous provinces are countries now in Kosovo's case and not in
+ * Vojvodina's, but the source lists both republics' towns as SR Srbija.
+ */
+const OF_REPUBLIC = {
+  'SR Slovenija': ['SVN'],
+  'SR Hrvatska': ['HRV'],
+  'SR BiH': ['BIH'],
+  'SR Srbija': ['SRB', 'XKX'],
+  'SR Crna Gora': ['MNE'],
+  'SR Makedonija': ['MKD'],
+}
+
+const shapes = []
+for (const iso of REPUBLICS) {
+  const fc = await json(`${iso.toLowerCase()}_adm0_exact.geojson`, EXACT(iso))
+  const g = fc.features[0].geometry
+  const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates]
+  shapes.push([iso, polys])
+}
+
+/**
+ * How far a point is from a border, in kilometres. Longitude is scaled by the
+ * latitude so a degree east counts for what it is worth this far north.
+ */
+const KM = 111.2
+const distance = ([x, y], polys) => {
+  const k = Math.cos((y * Math.PI) / 180)
+  let best = Infinity
+  for (const poly of polys) {
+    for (const ring of poly) {
+      for (let i = 1; i < ring.length; i++) {
+        const [ax, ay] = ring[i - 1]
+        const [bx, by] = ring[i]
+        const dx = (bx - ax) * k
+        const dy = by - ay
+        const len = dx * dx + dy * dy
+        const t = len ? Math.max(0, Math.min(1, (((x - ax) * k * dx + (y - ay) * dy) / len))) : 0
+        best = Math.min(best, Math.hypot((x - ax) * k - t * dx, y - ay - t * dy))
+      }
+    }
+  }
+  return best * KM
+}
+
+/**
+ * The coastline these outlines carry is a coarse one — Slovenia's whole border
+ * is a thousand points — so a seaside town can sit a few hundred metres out to
+ * sea in them. A point inside no republic at all is therefore given to the
+ * nearest, and only when it is close enough that the coastline is the obvious
+ * explanation. It cannot rescue a wrong town: Serbia's Požega is squarely
+ * inside Serbia, so asking for the Croatian one still finds nothing.
+ */
+const SLACK_KM = 5
+
+const offshore = []
+const placedIn = new Map()
+const republicOf = (node) => {
+  if (placedIn.has(node)) return placedIn.get(node)
+  const at = [node.lon, node.lat]
+  // A polygon holds a point when its outer ring does and none of its holes do.
+  let iso =
+    shapes.find(([, polys]) =>
+      polys.some(([outer, ...holes]) => inside(at, outer) && !holes.some((h) => inside(at, h))),
+    )?.[0] ?? null
+
+  if (!iso) {
+    const [nearest, km] = shapes
+      .map(([id, polys]) => [id, distance(at, polys)])
+      .sort((a, b) => a[1] - b[1])[0]
+    if (km <= SLACK_KM) {
+      iso = nearest
+      offshore.push(`${node.tags.name} sits ${(km * 1000).toFixed(0)} m outside ${iso}'s coastline`)
+    }
+  }
+
+  placedIn.set(node, iso)
+  return iso
+}
+
 const missing = []
+const ambiguous = []
 const features = []
 const seen = new Map()
 
 for (const { code, town, republic } of CODES) {
   const today = RENAMED[town] ?? ALSO_KNOWN[town] ?? town
-  const node = byName.get(key(toLatin(today)))
+  const wanted = OF_REPUBLIC[republic]
+  if (!wanted) fail('republics the code list names that this build does not know', [republic])
+
+  // Only places in the right republic, then the largest of those: it keeps Bor
+  // the town rather than some hamlet of the same name next door.
+  const here = (byName.get(key(toLatin(today))) ?? [])
+    .filter((n) => wanted.includes(republicOf(n)))
+    .sort((a, b) => (RANK[b.tags.place] ?? 0) - (RANK[a.tags.place] ?? 0))
+
+  const node = here[0]
   if (!node) {
-    missing.push(`${code} ${town}${today === town ? '' : ` (${today})`}`)
+    const elsewhere = (byName.get(key(toLatin(today))) ?? [])
+      .map((n) => republicOf(n) ?? 'outside the country')
+      .join(', ')
+    missing.push(
+      `${code} ${town}${today === town ? '' : ` (${today})`} in ${republic}` +
+        (elsewhere ? ` — found only in ${elsewhere}` : ''),
+    )
+    continue
+  }
+  // Two places of one name and one size in one republic: nothing in the data
+  // says which is meant, so it is not for the build to pick.
+  if (here[1] && RANK[here[1].tags.place] === RANK[node.tags.place]) {
+    ambiguous.push(
+      `${code} ${today} in ${republic}: ` +
+        here
+          .filter((n) => RANK[n.tags.place] === RANK[node.tags.place])
+          .map((n) => `${n.lat.toFixed(3)},${n.lon.toFixed(3)}`)
+          .join(' and '),
+    )
     continue
   }
 
@@ -178,7 +301,8 @@ for (const { code, town, republic } of CODES) {
   })
 }
 
-if (missing.length) fail('codes whose town could not be placed', missing)
+if (missing.length) fail('codes whose town could not be placed in its own republic', missing)
+if (ambiguous.length) fail('codes whose town could be either of two places', ambiguous)
 
 features.sort((a, b) => a.properties.code.localeCompare(b.properties.code, 'sr'))
 
