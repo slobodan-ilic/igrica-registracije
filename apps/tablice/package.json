@@ -11,7 +11,9 @@
     "build:slike": "node scripts/build-slike.mjs",
     "build:map-hr": "node scripts/build-map-hr.mjs",
     "build:map-mk": "node scripts/build-map-mk.mjs",
-    "build:map-me": "node scripts/build-map-me.mjs"
+    "build:map-me": "node scripts/build-map-me.mjs",
+    "build:map-si": "node scripts/build-map-si.mjs",
+    "build:grbovi-si": "node scripts/build-grbovi-si.mjs"
   },
   "dependencies": {
     "@kviz/engine": "*",
@@ -19,6 +21,7 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@kviz/build": "*"
+    "@kviz/build": "*",
+    "sharp": "^0.34.5"
   }
 }

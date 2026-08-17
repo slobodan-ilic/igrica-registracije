@@ -8,7 +8,7 @@ let fails=0
 const check=(label,ok,extra='')=>{console.log(`  ${ok?'✓':'✗'} ${label}${extra?' — '+extra:''}`); if(!ok)fails++}
 
 // the one topic: a real mouse click scores
-for (const [topic,file,sel] of [['srbija','srbija','[data-code]'],['hrvatska','hrvatska','[data-code]'],['makedonija','makedonija','[data-code]'],['crnagora','crnagora','[data-code]']]){
+for (const [topic,file,sel] of [['srbija','srbija','[data-code]'],['hrvatska','hrvatska','[data-code]'],['makedonija','makedonija','[data-code]'],['crnagora','crnagora','[data-code]'],['slovenija','slovenija','[data-code]']]){
   const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
   await p.setViewport({width:1440,height:900})
   const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>m.type()==='error'&&errs.push(m.text()))

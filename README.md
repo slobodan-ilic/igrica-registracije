@@ -4,7 +4,7 @@ Two map quizzes about Serbia, sharing one engine.
 
 | | what it asks | lives at |
 | --- | --- | --- |
-| [`apps/tablice`](apps/tablice) | a licence-plate code from Serbia, Croatia, North Macedonia or Montenegro — click the registration area it belongs to | [tablice.vercel.app](https://tablice.vercel.app) |
+| [`apps/tablice`](apps/tablice) | a licence-plate code from Serbia, Croatia, North Macedonia, Montenegro or Slovenia — click the registration area it belongs to | [tablice.vercel.app](https://tablice.vercel.app) |
 | [`apps/geografija`](apps/geografija) | a district, river, mountain or spa — click where it is | [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app) |
 
 They are separate apps with separate domains, but not separate codebases:

@@ -4,7 +4,7 @@ A quiz for learning licence-plate codes. You get a plate, you click the
 registration area it belongs to. Right answers go green and score; wrong ones go
 red, reveal the correct area and show a photograph of it.
 
-Four countries so far, each its own topic with its own map and its own plate:
+Five countries so far, each its own topic with its own map and its own plate:
 
 | | | at |
 | --- | --- | --- |
@@ -12,6 +12,7 @@ Four countries so far, each its own topic with its own map and its own plate:
 | **Hrvatska** | 34 codes | `/hrvatska` |
 | **Makedonija** | 34 codes | `/makedonija` |
 | **Crna Gora** | 25 codes | `/crnagora` |
+| **Slovenija** | 11 codes | `/slovenija` |
 
 The interface is Serbian throughout, whichever country you are playing. Serbia
 sits at the root because it is the flagship; every other country gets its own
@@ -26,6 +27,8 @@ npm run build:map      # data/srbija.json
 npm run build:map-hr   # data/hrvatska.json
 npm run build:map-mk   # data/makedonija.json
 npm run build:map-me   # data/crnagora.json
+npm run build:map-si   # data/slovenija.json
+npm run build:grbovi-si # the Slovenian coats of arms
 npm run build:slike    # the photographs
 ```
 
@@ -177,3 +180,46 @@ a candidate, not a member, and the real plate simply carries MNE low down. The
 separator is the state arms — a gold-rimmed red roundel with the crowned
 double-headed eagle — drawn as a silhouette, since it is about 5 mm across in
 reality. The serial runs two letters then three digits, unlike its neighbours.
+
+## Slovenia
+
+11 codes — and much the hardest data, because Slovenia's codes are defined over
+its 58 **upravne enote**, and nothing maps those:
+
+- OSM has 11 of the 58 as boundary relations, and no more.
+- geoBoundaries has the 212 občine, but with the diacritics mangled — Škocjan
+  arrives as `Ckocjan`, Žužemberk as `Suremberk` — so nothing can be matched
+  against it. OSM has them correctly named and tagged `ISO3166-2=SI-*`.
+- sl.wikipedia gives the občine for only **31** of the 58 units; the other 27
+  list their **settlements** instead.
+- Wikidata has no items for the units at all, and the state's legal register
+  answers with a JavaScript shell.
+
+So the missing half is derived: each of those 27 units' 2,554 settlements is
+placed inside an občina by point-in-polygon, and an občina goes to whichever
+unit most of its settlements came from. The majority matters — Slovenia reuses
+settlement names, and a single stray would otherwise hand a municipality to a
+unit on the far side of the country. Real members come in at six settlements or
+more; strays at one. The build then asserts what it must: **all 212 občine
+assigned, each to exactly one unit**, or it stops.
+
+The source contradicts itself once, and its own arithmetic settles it: both
+Grosuplje and Litija claim Ivančna Gorica, but Grosuplje states 464 km² — which
+is exactly Grosuplje plus Dobrepolje plus Ivančna Gorica — while Litija states
+321.97, exactly Litija plus Šmartno pri Litiji with no room for it.
+
+Finally the areas are **clipped to Natural Earth's land**. Slovenia's coastal
+občine take in the water it claims in the Bay of Piran, which left KP with a
+wedge of open sea attached: a glitch on the map, a wider frame, and the very
+stretch Slovenia and Croatia dispute. Clipping brings the total from 0.8% over
+Slovenia's real area to 0.2% under it.
+
+### The plate
+
+The green frame is what makes a Slovenian plate recognisable across a car park.
+The arms are the interesting part: a real plate carries the arms of the
+**municipality**, not the region — a GO plate from Idrija shows Idrija's arms,
+not Nova Gorica's. There is one plate per code here, so each shows the arms of
+the town its code is named after, which is what a plate registered in that town
+looks like. All eleven come from Wikimedia Commons and are public domain or CC0
+(`npm run build:grbovi-si`).
