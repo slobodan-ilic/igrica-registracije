@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs'
 const b=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new',args:['--touch-events=enabled']})
 const pause=ms=>new Promise(r=>setTimeout(r,ms))
 const S=process.env.URL ?? 'http://localhost:5183'
+const TIP_ROUTE='/okruzi/igra?n=25'
 let fails=0
 const check=(label,ok,extra='')=>{console.log(`  ${ok?'✓':'✗'} ${label}${extra?' — '+extra:''}`); if(!ok)fails++}
 
@@ -74,6 +75,38 @@ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});awai
 check('tap arms without scoring', (await t.$eval('.bar__stats',e=>e.textContent)).includes('Poeni0') && !!(await t.$('.picker')))
 await t.evaluate(()=>document.querySelector('.picker__confirm').click()); await pause(400)
 check('confirm scores', (await t.$eval('.bar__stats',e=>e.textContent)).includes('Poeni1'))
+
+// the tooltip must stay inside the map, whichever region it is over
+{
+  // A browser of its own, without --touch-events: with them on the app is in
+  // its touch mode, where there is no hover tooltip at all, and this check
+  // would pass having shown none.
+  const mouse=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new'})
+  const p=await mouse.newPage()
+  await p.setViewport({width:1440,height:900})
+  await p.goto(`${S}${TIP_ROUTE}`,{waitUntil:'networkidle0'}); await pause(800)
+  let off=0, worst=null, seen=0
+  for (const c of await p.$$eval('[data-code]',es=>es.map(e=>e.getAttribute('data-code')))) {
+    const pt=await p.evaluate(code=>{
+      const el=[...document.querySelectorAll('[data-code]')].find(e=>e.getAttribute('data-code')===code)
+      if(!el) return null
+      const r=el.getBoundingClientRect()
+      for(let fy=0.2;fy<0.9;fy+=0.1)for(let fx=0.2;fx<0.9;fx+=0.1){const x=r.x+r.width*fx,y=r.y+r.height*fy
+        if(document.elementFromPoint(x,y)?.closest('[data-code]')===el)return{x,y}}
+      return null},c)
+    if(!pt) continue
+    await p.mouse.move(pt.x,pt.y); await pause(80)
+    const o=await p.evaluate(()=>{const t=document.querySelector('.tip'); if(!t) return null
+      const a=t.getBoundingClientRect(), m=document.querySelector('.map').getBoundingClientRect()
+      return Math.max(m.top-a.top, a.bottom-m.bottom, m.left-a.left, a.right-m.right)})
+    if(o!==null){seen++; if(o>off){off=o; worst=c}}
+  }
+  // Fail if none ever appeared: a check that silently tests nothing is worse
+  // than no check.
+  check('tooltip never leaves the map', seen>0 && off<=1,
+    seen===0?'NO TOOLTIP EVER SHOWN':`${seen} checked, worst ${worst} by ${off.toFixed(1)}px`)
+  await mouse.close()
+}
 
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await b.close()

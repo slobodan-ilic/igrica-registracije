@@ -152,7 +152,9 @@
 .tip {
   position: absolute;
   z-index: 3;
-  transform: translate(-50%, calc(-100% - 14px));
+  /* Only centred horizontally: the top is computed, so the tooltip can flip
+     below the cursor when there is no room above it. */
+  transform: translateX(-50%);
   max-width: 260px;
   padding: 7px 12px;
   border-radius: 9px;
@@ -163,8 +165,19 @@
   animation: tip-in 110ms ease;
 }
 
+/* The tooltip's top is computed in JS now, so the entrance is a small nudge in
+   the direction it comes from rather than a full-height offset — that offset
+   was left over from when CSS did the positioning, and it threw the tooltip
+   off the top of the map for the length of the animation. */
 @keyframes tip-in {
-  from { opacity: 0; transform: translate(-50%, calc(-100% - 8px)); }
+  from { opacity: 0; transform: translate(-50%, 6px); }
+}
+
+/* Flipped below the cursor: it should rise into place, not drop. */
+.tip--below { animation-name: tip-in-below; }
+
+@keyframes tip-in-below {
+  from { opacity: 0; transform: translate(-50%, -6px); }
 }
 
 .tip__name {

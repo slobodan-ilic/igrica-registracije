@@ -110,6 +110,7 @@
   height: auto;
 }
 
-/* No Cyrillic line under this shield, so it sits a little larger and centred. */
-.plate--hr .plate__shield { height: calc(var(--plate-h) * 0.5); }
+/* The crown makes this emblem taller than Serbia's shield, and there is no
+   Cyrillic line under it, so it takes the full height of the plate's body. */
+.plate--hr .plate__shield { height: calc(var(--plate-h) * 0.66); }
 .plate--hr .plate__stamp { justify-content: center; }

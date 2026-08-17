@@ -110,9 +110,20 @@ for (const row of table.split('\n|-')) {
   // The raw link target is kept: its bracketed county is what tells the two
   // Novigrads apart, and stripping it here would throw that away.
   const places = [...row.matchAll(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g)].map((m) => m[1])
-  // The first bolded link is the town the code is named after.
-  const seat = row.match(/'''\[\[([^\]|]+)/)?.[1]
-  if (places.length) AREAS.set(code, { seat: stripQualifier(seat ?? places[0]), places })
+  // The town the code is named after is the bolded one — but the list bolds it
+  // two different ways, outside the link ('''[[Delnice]]''') and inside it
+  // ([[Split|'''Split''']]). Missing the second form silently yields whichever
+  // town happens to be first alphabetically, which is how ST became Hvar.
+  const seat =
+    row.match(/'''\[\[([^\]|]+)(?:\|[^\]]*)?\]\]'''/)?.[1] ??
+    row.match(/\[\[([^\]|]+)\|'''[^']+'''\]\]/)?.[1] ??
+    row.match(/\[\['''([^\]|']+)'''\]\]/)?.[1]
+  if (!places.length) continue
+  if (!seat) {
+    console.error(`${code}: no town is marked as the one it is named after`)
+    process.exit(1)
+  }
+  AREAS.set(code, { seat: stripQualifier(seat), places })
 }
 console.log(`${AREAS.size} codes covering ${[...AREAS.values()].reduce((n, a) => n + a.places.length, 0)} places`)
 
@@ -314,6 +325,24 @@ for (const code of [...new Set(assigned.map((a) => a.code))]) {
 }
 
 // Anything Croatian still unclaimed would be a hole in the map.
+/**
+ * Every code is built from letters of its town's name, in order: ST from SpliT,
+ * ČK from ČaKovec, ŽU from ŽUpanja. So the code's letters must appear in the
+ * town's name in sequence — which is exactly what catches a seat picked from
+ * the wrong end of an alphabetical list ('S' does not appear in "Hvar" at all).
+ */
+const inOrder = (code, town) => {
+  const t = key(toLatin(town))
+  let at = -1
+  return [...key(toLatin(code))].every((ch) => (at = t.indexOf(ch, at + 1)) !== -1)
+}
+const mismatched = [...AREAS].filter(([code, { seat }]) => !inOrder(code, seat))
+if (mismatched.length) {
+  console.error('\ncodes whose letters do not come from their town:')
+  for (const [code, { seat }] of mismatched) console.error(`    ${code} -> ${seat}`)
+  process.exit(1)
+}
+
 const orphans = municipalities.filter(
   (f) => !claimed.has(f) && countyOf(f)?.endsWith('županija'),
 )

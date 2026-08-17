@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { geoMercator, geoPath } from 'd3-geo'
 import { useMapView, type Point } from './useMapView'
 import type { RegionCollection, RegionFeature, RegionState } from './types'
@@ -69,6 +69,8 @@ export function QuizMap({
   /** Keeps the banner out of the half of the map being looked at. */
   const [armedLow, setArmedLow] = useState(false)
   const [tip, setTip] = useState<Point | null>(null)
+  const tipRef = useRef<HTMLDivElement>(null)
+  const [tipAt, setTipAt] = useState({ left: 0, top: 0, below: false })
 
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -174,6 +176,40 @@ export function QuizMap({
   // Already-asked regions also show their code, as reinforcement.
   const answered = active ? states[active] === 'correct' || states[active] === 'missed' : false
   const info = activeShape ? describe(activeShape.code, answered) : null
+
+  /**
+   * Keep the tooltip inside the map. It prefers to sit above the cursor, but
+   * near the top edge there is no room, so it flips below — and it is clamped
+   * to the left and right edges by its own measured width rather than a guess.
+   * Measured in a layout effect so it never paints in the wrong place first.
+   */
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- see the note below
+  useLayoutEffect(() => {
+    const el = tipRef.current
+    const wrap = wrapRef.current
+    if (!el || !wrap || !tip) return
+    const GAP = 14
+    const { offsetWidth: w, offsetHeight: h } = el
+    const { clientWidth: W, clientHeight: H } = wrap
+    const below = tip.y - h - GAP < 0
+    const next = {
+      left: Math.min(Math.max(tip.x, w / 2 + 4), Math.max(w / 2 + 4, W - w / 2 - 4)),
+      top: below
+        ? Math.min(tip.y + GAP, Math.max(0, H - h - 4))
+        : Math.max(4, tip.y - h - GAP),
+      below,
+    }
+    // Only when something actually moved: this effect runs after every render,
+    // and setting state unconditionally would schedule the next one forever.
+    setTipAt((at) =>
+      at.left === next.left && at.top === next.top && at.below === next.below ? at : next,
+    )
+    // Deliberately no dependency list. The tooltip's size changes with its text
+    // — a long list of towns wraps to two lines — and any list of dependencies
+    // is a guess about when that happens, which is how it ended up positioned
+    // from a stale width. Running every render and writing state only when
+    // something actually moved is both always current and loop-free.
+  })
 
   /**
    * SVG paints in document order and a stroke straddles the edge it sits on, so
@@ -358,11 +394,9 @@ export function QuizMap({
 
       {!armed && hover && info && tip && (
         <div
-          className="tip"
-          style={{
-            left: Math.min(Math.max(tip.x, 96), (wrapRef.current?.clientWidth ?? 0) - 96),
-            top: tip.y,
-          }}
+          ref={tipRef}
+          className={`tip${tipAt.below ? ' tip--below' : ''}`}
+          style={{ left: tipAt.left, top: tipAt.top }}
           role="tooltip"
         >
           <span className="tip__name">
