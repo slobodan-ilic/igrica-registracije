@@ -207,3 +207,21 @@
   width: auto;
   object-fit: contain;
 }
+
+/* ---------- Yugoslavia ---------- */
+
+/* White enamel, no country band, and lettering in the dark blue those plates
+   were stamped in rather than the black their successors use. */
+.plate--yu {
+  background: linear-gradient(#fbfbf8 0%, #fff 42%, #eceee9 100%);
+}
+
+.plate--yu .plate__code,
+.plate--yu .plate__digits { color: #1c2a63; }
+
+.plate--yu .plate__dots { color: #aab0c4; }
+.plate--yu .plate__dash { color: #aab0c4; }
+
+/* The star is smaller than the emblems that replaced it — on the real plate it
+   is a mark between the groups, not a badge. */
+.plate__star { height: calc(var(--emblem-h) * 0.5); }

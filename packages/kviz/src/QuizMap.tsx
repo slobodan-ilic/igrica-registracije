@@ -39,7 +39,7 @@ type Props = {
   /** How answers are drawn: filled areas, stroked lines, or point markers. */
   kind?: 'area' | 'line' | 'point'
   /** Which mark a point topic draws, so a spa is not mistaken for a peak. */
-  marker?: 'peak' | 'spa'
+  marker?: 'peak' | 'spa' | 'town'
   /** Drawn underneath, purely as context, and never answerable. */
   base?: RegionCollection
   /** Elevation bands drawn inside the base, so the land shows its shape. */
@@ -340,6 +340,13 @@ export function QuizMap({
                     <path
                       className="pt__mark"
                       d="M0,-6.6 C3.4,-2.4 5.2,-0.2 5.2,2 A5.2,5.2 0 0 1 -5.2,2 C-5.2,-0.2 -3.4,-2.4 0,-6.6 Z"
+                    />
+                  ) : marker === 'town' ? (
+                    // A ringed dot, the way a town is marked on a printed map.
+                    <path
+                      className="pt__mark"
+                      d="M0,-5.6 A5.6,5.6 0 1 1 0,5.6 A5.6,5.6 0 1 1 0,-5.6 Z M0,-2.4 A2.4,2.4 0 1 0 0,2.4 A2.4,2.4 0 1 0 0,-2.4 Z"
+                      fillRule="evenodd"
                     />
                   ) : (
                     <path className="pt__mark" d="M0,-6.4 L5.6,3.8 H-5.6 Z" />

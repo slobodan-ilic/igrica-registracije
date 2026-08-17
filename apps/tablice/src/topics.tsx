@@ -4,6 +4,7 @@ import { PlateHR } from './PlateHR'
 import { PlateMK } from './PlateMK'
 import { PlateME } from './PlateME'
 import { PlateSI } from './PlateSI'
+import { PlateYU } from './PlateYU'
 import {
   allOf, cap, plural,
   type Photos, type RegionCollection, type Topic,
@@ -34,6 +35,11 @@ type Country = {
   unit?: string
   /** Serbia alone offers the Kosovo set. */
   kim?: Topic['kimNote']
+  /** Yugoslavia is asked as towns rather than areas; see build-map-yu.mjs. */
+  kind?: Topic['kind']
+  marker?: Topic['marker']
+  /** What the answers are drawn on, when they are not areas themselves. */
+  detail?: string
 }
 
 /**
@@ -41,14 +47,14 @@ type Country = {
  * question in the same words — only the plate, the map and the count change —
  * so the wording lives here once rather than five times.
  */
-function country({ unit = 'područje', kim, plate, ...rest }: Country): Topic {
+function country({ unit = 'područje', detail = 'takođe', kim, plate, ...rest }: Country): Topic {
   return {
     ...rest,
     blurb: 'registarske oznake',
     title: 'Koja je ovo tablica?',
     unit,
     allLabel: 'Sve oznake',
-    detail: 'takođe',
+    detail,
     showCode: true,
     offersKim: kim !== undefined,
     kimNote: kim,
@@ -130,6 +136,24 @@ export const TOPICS: Record<string, Topic> = {
     unit: 'opštinu',
     plate: (code) => <PlateME code={code} />,
     lead: lead('crnogorske tablice', 'po jedna za svaku opštinu', 'opštinu kojoj'),
+  }),
+
+  jugoslavija: country({
+    id: 'jugoslavija',
+    label: 'Jugoslavija',
+    card: 'Stare oznake SFRJ — pogodi grad, uključujući i one kojih više nema.',
+    load: async () => ({
+      regions: (await import('../data/jugoslavija.json')).default as unknown as RegionCollection,
+      base: (await import('../data/jugoslavija-outline.json')).default as unknown as RegionCollection,
+    }),
+    sample: { code: 'TG', name: 'Titograd', covers: [] },
+    count: 125,
+    kind: 'point',
+    marker: 'town',
+    unit: 'grad',
+    detail: '',
+    plate: (code) => <PlateYU code={code} />,
+    lead: lead('stare jugoslovenske tablice', 'onako kako je bilo osamdesetih', 'grad kojem'),
   }),
 
   slovenija: country({

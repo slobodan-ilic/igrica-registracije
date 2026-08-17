@@ -64,5 +64,5 @@ export type Topic = {
   /** How answers are drawn on the map. */
   kind?: 'area' | 'line' | 'point'
   /** Point topics pick their marker, so a spa is not mistaken for a peak. */
-  marker?: 'peak' | 'spa'
+  marker?: 'peak' | 'spa' | 'town'
 }

@@ -4,7 +4,7 @@ A quiz for learning licence-plate codes. You get a plate, you click the
 registration area it belongs to. Right answers go green and score; wrong ones go
 red, reveal the correct area and show a photograph of it.
 
-Five countries so far, each its own topic with its own map and its own plate:
+Five countries and the one they all used to be, each its own topic with its own map and its own plate:
 
 | | | at |
 | --- | --- | --- |
@@ -13,6 +13,7 @@ Five countries so far, each its own topic with its own map and its own plate:
 | **Makedonija** | 34 codes | `/makedonija` |
 | **Crna Gora** | 25 codes | `/crnagora` |
 | **Slovenija** | 11 codes | `/slovenija` |
+| **Jugoslavija** | 125 codes | `/jugoslavija` — the SFRJ, mid-1980s |
 
 The interface is Serbian throughout, whichever country you are playing. Serbia
 sits at the root because it is the flagship; every other country gets its own
@@ -44,6 +45,7 @@ npm run build:map-hr   # data/hrvatska.json
 npm run build:map-mk   # data/makedonija.json
 npm run build:map-me   # data/crnagora.json
 npm run build:map-si   # data/slovenija.json
+npm run build:map-yu   # data/jugoslavija.json
 npm run build:grbovi-si # the Slovenian coats of arms
 npm run build:slike    # the photographs
 ```
@@ -239,3 +241,36 @@ not Nova Gorica's. There is one plate per code here, so each shows the arms of
 the town its code is named after, which is what a plate registered in that town
 looks like. All eleven come from Wikimedia Commons and are public domain or CC0
 (`npm run build:grbovi-si`).
+
+## Yugoslavia
+
+125 codes as the map stood in the **mid-1980s** — which is when the names are at
+their best. Six of the towns were named for Tito: Titograd, Titovo Užice,
+Titova Mitrovica, Titov Veles, Titov Drvar and Titova Korenica. Four more have
+since been renamed: Ivangrad, Svetozarevo, Slavonska Požega and Podravska
+Slatina. Each carries what it is called today, revealed once you have answered.
+
+**This one asks for towns, not areas, and that is a deliberate limit.** The
+codes were issued over groups of opštine, and which opština belonged to which
+code is not published anywhere that can be relied on — the boundaries have moved
+a great deal since, most of all in Bosnia and Kosovo. Guessing it, by nearest
+town or otherwise, would be inventing a map. The towns themselves are exact, so
+the quiz asks for the town and the map draws the six republics behind them.
+
+Which name a town had is decided by the dates the source gives rather than by
+taste. A note reading "od 1992 se zove Berane" means Ivangrad was still current;
+one reading "od 1989 Kosovska Mitrovica" means that name had already replaced
+Titova Mitrovica — so a snapshot taken in 1990 would miss it, and one taken in
+1985 keeps it. Two towns held two codes across the period and only the one in
+force is kept, which is why BA and KM are absent.
+
+### The plate
+
+No country band, no shield: white enamel, lettering in the dark blue those
+plates were stamped in rather than the black their successors use, and the red
+five-pointed star between the letters and the numbers. The real ones ran to
+several lengths — BG★123-456, BG★123-45, BG★12-34 — and the longest is used.
+
+Bosnia is the reason this is worth playing: it is the only place in the app
+where its towns have codes of their own, since Bosnia has had no regional codes
+since 1998.

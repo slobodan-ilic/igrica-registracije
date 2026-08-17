@@ -12,7 +12,8 @@ export function Plate({
 }: {
   /** Modifier for the country's own styling, e.g. "hr". Serbia needs none. */
   country?: string
-  band: ReactNode
+  /** The country strip. Yugoslavia had none, so it is optional. */
+  band?: ReactNode
   /** Modifier for the band — the EU members share one, so it is separate. */
   bandStyle?: string
   code: string
@@ -25,7 +26,9 @@ export function Plate({
       role="img"
       aria-label={`Registarska oznaka ${code}`}
     >
-      <div className={`plate__band${bandStyle ? ` plate__band--${bandStyle}` : ''}`}>{band}</div>
+      {band && (
+        <div className={`plate__band${bandStyle ? ` plate__band--${bandStyle}` : ''}`}>{band}</div>
+      )}
 
       <div className="plate__body">
         {/* Keyed on the code so it replays its entrance on each new question. */}
