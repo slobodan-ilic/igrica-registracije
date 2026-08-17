@@ -4,13 +4,14 @@ A quiz for learning licence-plate codes. You get a plate, you click the
 registration area it belongs to. Right answers go green and score; wrong ones go
 red, reveal the correct area and show a photograph of it.
 
-Three countries so far, each its own topic with its own map and its own plate:
+Four countries so far, each its own topic with its own map and its own plate:
 
 | | | at |
 | --- | --- | --- |
 | **Srbija** | 81 codes | `/` — the front page |
 | **Hrvatska** | 34 codes | `/hrvatska` |
 | **Makedonija** | 34 codes | `/makedonija` |
+| **Crna Gora** | 25 codes | `/crnagora` |
 
 The interface is Serbian throughout, whichever country you are playing. Serbia
 sits at the root because it is the flagship; every other country gets its own
@@ -24,6 +25,7 @@ npm run dev -w @kviz/tablice
 npm run build:map      # data/srbija.json
 npm run build:map-hr   # data/hrvatska.json
 npm run build:map-mk   # data/makedonija.json
+npm run build:map-me   # data/crnagora.json
 npm run build:slike    # the photographs
 ```
 
@@ -151,3 +153,27 @@ The country mark is **NMK**, not the MK it was before 2019. The distinctive part
 is the small red block after the code, carrying the same letters again in gold
 Cyrillic above the serial's — so ST reads СТ, and SK reads СК, which to a Latin
 eye looks like CK. Red and gold are the national pairing, as on the flag.
+
+## Montenegro
+
+25 codes, and the simplest of the four: every municipality has its own code and
+every code covers exactly one municipality, so there is nothing to group.
+Boundaries are OpenStreetMap `admin_level=6`, which is those 25 units exactly —
+including Zeta, split from Podgorica in 2024, so the list is current.
+
+The borders still go through a shared topology before being thinned, for the
+same reason as everywhere else: neighbours built from the same arc thin
+identically and cannot part into a sliver of no-man's-land.
+
+OSM names each unit by what it is — `Opština Nikšić`, but `Glavni grad
+Podgorica` for the capital and `Prijestolnica Cetinje` for the old royal one —
+and Ulcinj carries its Montenegrin and Albanian names in one tag
+(`Opština Ulcinj - Komuna e Ulqinit`).
+
+### The plate
+
+The blue band is the union's, but the stars' place is left empty: Montenegro is
+a candidate, not a member, and the real plate simply carries MNE low down. The
+separator is the state arms — a gold-rimmed red roundel with the crowned
+double-headed eagle — drawn as a silhouette, since it is about 5 mm across in
+reality. The serial runs two letters then three digits, unlike its neighbours.

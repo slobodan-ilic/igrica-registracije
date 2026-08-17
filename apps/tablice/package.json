@@ -10,7 +10,8 @@
     "build:map": "node scripts/build-map.mjs",
     "build:slike": "node scripts/build-slike.mjs",
     "build:map-hr": "node scripts/build-map-hr.mjs",
-    "build:map-mk": "node scripts/build-map-mk.mjs"
+    "build:map-mk": "node scripts/build-map-mk.mjs",
+    "build:map-me": "node scripts/build-map-me.mjs"
   },
   "dependencies": {
     "@kviz/engine": "*",

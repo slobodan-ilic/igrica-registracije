@@ -1,6 +1,7 @@
 import { Plate } from './Plate'
 import { PlateHR } from './PlateHR'
 import { PlateMK } from './PlateMK'
+import { PlateME } from './PlateME'
 import {
   allOf, cap, plural,
   type Photos, type RegionCollection, type Topic,
@@ -96,6 +97,35 @@ export const TOPICS: Record<string, Topic> = {
     detail: 'takođe',
     showCode: true,
     prompt: (item) => <PlateMK code={item.code} />,
+    hover: (item) => ({ title: item.name, sub: item.covers.join(' · ') }),
+    reveal: (item) => (
+      <span>
+        <b>{item.code}</b> je {item.name}
+      </span>
+    ),
+  },
+
+  crnagora: {
+    id: 'crnagora',
+    label: 'Crna Gora',
+    blurb: 'registarske oznake',
+    title: 'Koja je ovo tablica?',
+    card: 'Pogodi kojoj opštini pripada oznaka sa crnogorske tablice.',
+    load: async () => ({
+      regions: (await import('../data/crnagora.json')).default as unknown as RegionCollection,
+    }),
+    sample: { code: 'PG', name: 'Podgorica', covers: [] },
+    count: 25,
+    offersKim: false,
+    lead: (n) =>
+      'Dobijate oznaku sa crnogorske tablice — kliknite na opštinu kojoj ' +
+      `pripada. ${cap(allOf(n, 'oznaka', 'oznake', 'oznaka'))}, ` +
+      'po jedna za svaku opštinu.',
+    unit: 'opštinu',
+    allLabel: 'Sve oznake',
+    detail: 'takođe',
+    showCode: true,
+    prompt: (item) => <PlateME code={item.code} />,
     hover: (item) => ({ title: item.name, sub: item.covers.join(' · ') }),
     reveal: (item) => (
       <span>

@@ -144,3 +144,21 @@
   line-height: 1.05;
   letter-spacing: 0.02em;
 }
+
+/* ---------- Montenegro ---------- */
+
+/* The union's blue, but the stars' place is left empty: Montenegro is a
+   candidate, not a member, and the real plate simply carries MNE low down. */
+.plate__band--me {
+  justify-content: flex-end;
+  padding-bottom: 8%;
+  background: linear-gradient(#0a44a8, #003399);
+}
+
+.plate__roundel {
+  height: calc(var(--plate-h) * 0.44);
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25));
+}
+
+/* Two letters then three digits, with a gap rather than a dash. */
+.plate--me .plate__digits { gap: 0.32em; }
