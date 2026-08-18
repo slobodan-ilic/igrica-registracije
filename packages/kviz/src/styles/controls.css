@@ -164,11 +164,63 @@
 .theme svg path:only-child { fill: currentColor; stroke: none; }
 
 /* On the menu, home and summary it floats in the corner. */
-.shell--center .theme,
-.shell--scroll .theme {
+/* Theme and account together, top right of every screen but the board. */
+.shell--center .corner,
+.shell--scroll .corner {
   position: fixed;
   top: 16px;
   right: 16px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Google's button arrives at whatever height it likes; this keeps the row
+     from jumping between signed out and signed in. */
+  min-height: 32px;
+}
+
+/* Google renders its button into an iframe with an opaque white backdrop, and
+   nothing out here can paint inside it — so the frame is clipped to the shape
+   the button already has, and the button is the white one, which makes the
+   whole thing one pill instead of a card with a pill on it. */
+.account--google {
+  overflow: hidden;
+  border-radius: 999px;
+  background: #fff;
+  line-height: 0;
+}
+
+.account__name {
+  max-width: 14ch;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account__out {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.account__out:hover { border-color: var(--accent); color: var(--accent); }
+
+@media (max-width: 560px) {
+  .account__name { max-width: 8ch; }
 }
 
 /* ---------- topic picker ---------- */

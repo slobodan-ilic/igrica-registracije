@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { geoCentroid } from 'd3-geo'
 import { Setup } from './Setup'
 import { Game } from './Game'
-import { ThemeToggle } from './Chrome'
+import { Corner } from './Chrome'
+import { useAccount } from './account'
 import { indexByCode, playableCodes, randomSeed } from './deck'
 import { applyTheme, systemTheme, THEMES, usePref, type Theme } from './prefs'
 import { canonical, href, navigate, useRoute, type Round } from './router'
@@ -46,6 +47,8 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
   useEffect(() => applyTheme(theme), [theme])
   const [mode, setMode] = usePref<Mode>('mode', MODES, () => 'classic')
   const [kim, setKim] = usePref<'on' | 'off'>('kim', KIM, () => 'off')
+
+  const account = useAccount()
 
   const touch = useMemo(
     () => typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches,
@@ -124,10 +127,14 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
     return live.length ? live[Math.floor(Math.random() * live.length)].properties : null
   }, [regions])
 
+  const corner = (
+    <Corner theme={theme} onTheme={setTheme} account={account} />
+  )
+
   if (!topic) {
     return (
       <main className="shell shell--scroll">
-        <ThemeToggle theme={theme} onChange={setTheme} />
+        {corner}
         {home}
       </main>
     )
@@ -136,7 +143,7 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
   if (!data) {
     return (
       <main className="shell shell--center">
-        <ThemeToggle theme={theme} onChange={setTheme} />
+        {corner}
         <p className="loading">Učitavanje mape…</p>
       </main>
     )
@@ -166,7 +173,7 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
 
   return (
     <main className="shell shell--center">
-      <ThemeToggle theme={theme} onChange={setTheme} />
+      {corner}
       {hero && (
         <Setup
           topic={topic}
