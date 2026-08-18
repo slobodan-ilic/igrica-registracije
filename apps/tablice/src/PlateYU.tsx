@@ -29,7 +29,7 @@ export function PlateYU({ code }: { code: string }) {
       country="yu"
       code={code}
       emblem={<Star />}
-      serial={<Serial parts={['000', '000']} separator="·" />}
+      serial={<Serial parts={['326', '851']} separator="-" />}
     />
   )
 }

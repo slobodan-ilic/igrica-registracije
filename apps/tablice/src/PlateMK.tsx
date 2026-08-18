@@ -26,7 +26,7 @@ export function PlateMK({ code }: { code: string }) {
           <span>АА</span>
         </span>
       }
-      serial={<Serial parts={['000', 'AA']} separator="-" />}
+      serial={<Serial parts={['1234', 'AB']} />}
     />
   )
 }

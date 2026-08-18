@@ -11,34 +11,43 @@ const FIELD = '#c40308'
  * two heads, spread wings, a fanned tail — rather than the full achievement.
  */
 function Emblem() {
+  // Half the bird, drawn once and mirrored about the middle. What has to
+  // survive at twenty-odd pixels is the silhouette — two heads above two
+  // wings, over a fanned tail — so the wings are broad sweeps with stepped
+  // feather edges rather than the spread of separate quills on the real arms.
+  const half = (
+    <>
+      {/* Neck, rising from the body to a head that looks outward. */}
+      <path d="M20 17.6c0-3.4 1.6-6.4 4.3-8.4l2.2 3.1c-1.9 1.5-3 3.4-3.2 5.7z" />
+      <circle cx="26.7" cy="8.4" r="3" />
+      <path d="M29.2 6.7 33.6 8.1 29.4 10z" />
+      {/* Wing: up and out, then stepped back down in three ranks of feathers. */}
+      <path
+        d="M20.6 14.6c3.4-3 8-4.2 12.8-3.2-.8 1.8-2 3.2-3.6 4.2 1.8.8 3.2 2 4.2 3.6
+           -1.8.6-3.6.8-5.4.6 1.2 1.4 2 3 2.4 4.8-3-2-6.6-3.4-10.4-4z"
+      />
+      {/* Foot. */}
+      <path d="M20.4 25.4c1.5.1 2.9.6 4.1 1.4l-1.9.7 1.5 1.2-3.7-.4z" />
+    </>
+  )
+
   return (
     <svg className="plate__roundel" viewBox="0 0 40 40" aria-hidden="true">
-      <circle cx="20" cy="20" r="19.2" fill={GOLD} />
-      <circle cx="20" cy="20" r="16.4" fill={FIELD} />
+      <circle cx="20" cy="20" r="19.4" fill={GOLD} />
+      <circle cx="20" cy="20" r="16.6" fill={FIELD} />
 
       <g fill={GOLD}>
-        {/* Crown over the middle, where the two necks part. */}
-        <path d="M16.6 8.9h6.8v1.9h-6.8z" />
-        <path d="M16.8 8.6l.6-2.5 2.6 1.7 2.6-1.7.6 2.5z" />
-
-        {/* The body: a narrow trunk down the middle with a fanned tail. */}
-        <path d="M18.4 15h3.2l-.5 9.4h-2.2z" />
-        <path d="M17.6 24.2h4.8l-2.4 8.4z" />
-
-        {/* One half of the bird, mirrored about the centre: a head turned
-            outward, and a wing spread up and out in three layers of feathers. */}
-        {[1, -1].map((side) => (
-          <g key={side} transform={side === 1 ? undefined : 'translate(40 0) scale(-1 1)'}>
-            <path d="M20.4 16.4l2.6-4.2 2.4 1.5-3.4 5z" />
-            <circle cx="24.9" cy="11.4" r="2.4" />
-            <path d="M26.7 10.1l3.5 1.1-3.3 1.8z" />
-            <path d="M21 15.9c3.2-1.5 7-2 10.6-.6-1.9 1-4 1.6-6 1.7 2.4.9 4.4 2.2 5.8 3.9-2.3-.5-4.6-.5-6.7.1 1.8 1.1 3.2 2.6 4 4.3-2.4-1.6-5-2.6-7.7-2.9z" />
-            <path d="M21 25.1c1.3.2 2.5.7 3.5 1.5l-1.7.6 1.4 1.2-3.2-.4z" />
-          </g>
-        ))}
+        {/* The crown, where the two necks part. */}
+        <path d="M16.4 5.6h7.2v1.8h-7.2z" />
+        <path d="M16.6 5.3 17.1 2.6l2.9 1.8 2.9-1.8.5 2.7z" />
+        {/* Body, and the tail fanned below it. */}
+        <path d="M18.2 13.8h3.6l-.5 10h-2.6z" />
+        <path d="M17.1 23.8h5.8l-.9 4.2 1.1 1.2-1.9.6-1.2 3.4-1.2-3.4-1.9-.6 1.1-1.2z" />
+        {half}
+        <g transform="translate(40 0) scale(-1 1)">{half}</g>
       </g>
 
-      <circle cx="20" cy="20" r="17.8" fill="none" stroke={GOLD_DARK} strokeWidth="0.7" />
+      <circle cx="20" cy="20" r="18" fill="none" stroke={GOLD_DARK} strokeWidth="0.8" />
     </svg>
   )
 }
@@ -56,7 +65,7 @@ export function PlateME({ code }: { code: string }) {
       code={code}
       band={<span className="plate__mark">MNE</span>}
       emblem={<Emblem />}
-      serial={<Serial parts={['AA', '000']} />}
+      serial={<Serial parts={['AB', '375']} />}
     />
   )
 }

@@ -13,7 +13,7 @@
   /* The badge between the code and the serial — shield, roundel or block. Every
      country's is the same height, as they are on the real plates: the emblem
      occupies one slot whatever is drawn in it. */
-  --emblem-h: calc(var(--plate-h) * 0.44);
+  --emblem-h: calc(var(--plate-h) * 0.42);
   display: inline-flex;
   align-items: stretch;
   height: var(--plate-h);
@@ -64,7 +64,10 @@
 .plate__digits {
   color: #101215;
   font-family: 'Helvetica Neue', 'Arial Narrow', Inter, system-ui, sans-serif;
-  font-size: calc(var(--plate-h) * 0.52);
+  /* On a real plate the characters are 77mm on a 112mm plate — they dominate
+     it. Ours were half that, which is what made the plates look stubby: the
+     width follows the lettering, so small characters give a short plate. */
+  font-size: calc(var(--plate-h) * 0.64);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.02em;
@@ -143,9 +146,14 @@
 
 /* ---------- North Macedonia ---------- */
 
-/* A brighter blue than the union's, and lettering only — no stars, since the
-   country is not a member. */
-.plate__band--mk { background: linear-gradient(#3a70f0, #255de6); }
+/* A vivid blue, deeper than the union's, and lettering only — no stars, since
+   the country is not a member. The mark sits at the foot of the band rather
+   than in the middle of it, which is where the real plate carries it. */
+.plate__band--mk {
+  justify-content: flex-end;
+  padding-bottom: 7%;
+  background: linear-gradient(#1b3ce8, #1029c4);
+}
 
 /* The red block is its own box and needs no centring column around it, so the
    shell's wrapper is taken out of the layout rather than left to nudge it. */
