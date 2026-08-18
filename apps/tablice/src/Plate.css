@@ -96,9 +96,14 @@
   gap: 2px;
 }
 
-.plate__shield,
-.plate__roundel {
+/* Four of the six carry real arms, fetched from Commons rather than drawn —
+   see scripts/build-grbovi.mjs. They are heraldry, and hand-drawn heraldry
+   does not survive being shrunk to twenty pixels. */
+.plate__grb {
+  display: block;
   height: var(--emblem-h);
+  width: auto;
+  object-fit: contain;
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25));
 }
 
@@ -137,11 +142,9 @@
 
 /* ---------- Croatia ---------- */
 
-/* The crown sits above the shield inside the same viewBox, so the height is
-   scaled up by the viewBox's proportions (the shield is 48 of its 64 units).
-   That leaves the šahovnica itself exactly as big as Serbia's shield, with the
-   crown extra on top — which is how the two look side by side in life. */
-.plate--hr .plate__shield { height: calc(var(--emblem-h) * 64 / 48); }
+/* The crown counts as part of the arms here, so the whole thing is measured
+   against the emblem slot and the šahovnica ends up a little shorter than
+   Serbia's shield — which is how the two look side by side in life. */
 .plate--hr .plate__stamp { justify-content: center; }
 
 /* ---------- North Macedonia ---------- */
@@ -189,6 +192,17 @@
 /* Two letters then three digits, with a gap rather than a dash. */
 .plate--me .plate__digits { gap: 0.32em; }
 
+/* Montenegro stamps its arms inside a red roundel with a gold rim, and the
+   file on Commons is the eagle alone — so the roundel is drawn here. */
+.plate--me .plate__grb {
+  box-sizing: border-box;
+  width: var(--emblem-h);
+  padding: 9%;
+  border: calc(var(--emblem-h) * 0.055) solid #e0ae38;
+  border-radius: 50%;
+  background: #c8102e;
+}
+
 /* Both of these fit three letters on a narrower band than Serbia's. */
 .plate--mk .plate__mark,
 .plate--me .plate__mark {
@@ -205,15 +219,6 @@
     0 1px 0 rgb(255 255 255 / 0.7) inset,
     0 10px 22px -12px rgb(20 22 26 / 0.55),
     0 1px 3px rgb(20 22 26 / 0.2);
-}
-
-/* The municipal arms, fetched from Commons rather than drawn — there are eleven
-   of them and they are real heraldry, not shapes to be approximated. */
-.plate__grb {
-  display: block;
-  height: var(--emblem-h);
-  width: auto;
-  object-fit: contain;
 }
 
 /* ---------- Yugoslavia ---------- */

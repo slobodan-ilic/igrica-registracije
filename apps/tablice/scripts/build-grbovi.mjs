@@ -1,5 +1,13 @@
-// Builds public/img/grbovi/<code>.webp: the municipal coat of arms stamped on
-// each Slovenian plate.
+// Builds public/img/grbovi/<name>.webp: every coat of arms stamped on a plate.
+//
+// Two kinds. The national arms — Croatia's and Montenegro's — are one file
+// each, drawn on every plate of that country. Slovenia's are municipal, one per
+// registration code.
+//
+// These were drawn by hand in SVG before, and hand-drawn heraldry does not
+// survive being shrunk to twenty pixels: Croatia's crown of five came out a
+// smudge and Montenegro's eagle a sunburst. The real artwork is on Commons and
+// in the public domain, so there is no reason to approximate it.
 //
 // Slovenian plates carry the arms of the *municipality*, not of the
 // registration area — a GO plate from Idrija shows Idrija's arms, not Nova
@@ -18,6 +26,16 @@ import sharp from 'sharp'
 import { fileInfo, download } from '@kviz/build/wiki'
 
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+
+/** The arms a whole country's plates carry. */
+const NATIONAL = {
+  hr: 'Coat of arms of Croatia.svg',
+  me: 'Coat of arms of Montenegro.svg',
+  // Serbia's plates carry the small arms — the crowned double-headed eagle,
+  // with the cross and four firesteels on its breast. What was drawn here
+  // before was only that inescutcheon, which is a different thing.
+  rs: 'Coat of arms of Serbia small.svg',
+}
 
 /** Registration code -> the Commons file holding its town's arms. */
 const ARMS = {
@@ -40,12 +58,14 @@ const FREE = /^(cc0|public domain|pd)/i
 /** Rendered at about 30 px on the plate; 160 covers a retina screen. */
 const HEIGHT = 160
 
-const info = await fileInfo(Object.values(ARMS))
+const ALL = { ...NATIONAL, ...ARMS }
+
+const info = await fileInfo(Object.values(ALL))
 const dir = resolve(app, 'public/img/grbovi')
 mkdirSync(dir, { recursive: true })
 
 const problems = []
-for (const [code, file] of Object.entries(ARMS)) {
+for (const [code, file] of Object.entries(ALL)) {
   const meta = info.get(file)
   const why =
     !meta ? 'not found on Commons'
@@ -82,8 +102,5 @@ if (problems.length) {
   process.exit(1)
 }
 
-writeFileSync(
-  resolve(app, 'data/grbovi-si.json'),
-  JSON.stringify(Object.fromEntries(Object.entries(ARMS).map(([c, f]) => [c, f]))),
-)
-console.log(`\nOK  ${Object.keys(ARMS).length} coats of arms`)
+writeFileSync(resolve(app, 'data/grbovi.json'), JSON.stringify(ALL))
+console.log(`\nOK  ${Object.keys(ALL).length} coats of arms`)

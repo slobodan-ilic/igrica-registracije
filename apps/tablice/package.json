@@ -13,7 +13,7 @@
     "build:map-mk": "node scripts/build-map-mk.mjs",
     "build:map-me": "node scripts/build-map-me.mjs",
     "build:map-si": "node scripts/build-map-si.mjs",
-    "build:grbovi-si": "node scripts/build-grbovi-si.mjs",
+    "build:grbovi": "node scripts/build-grbovi.mjs",
     "build:map-yu": "node scripts/build-map-yu.mjs"
   },
   "dependencies": {
