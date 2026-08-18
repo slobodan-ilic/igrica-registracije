@@ -85,8 +85,18 @@
   .verdict__ok, .verdict__bad { padding: 5px 13px; }
 }
 
+/* Centred, but never at the cost of the top of the page.
+   justify-content: center spills a too-tall child equally above and below, and
+   nothing can scroll above the start edge — so the first thing on the page,
+   which here is the plate itself, ends up cut off and unreachable. Auto margins
+   centre the same way while free space lasts and give up gracefully when it
+   runs out, which is how .home and the end-of-round summary already do it. */
 .shell--center {
-  justify-content: center;
   align-items: center;
   overflow-y: auto;
+}
+
+.shell--center > .intro,
+.shell--center > .loading {
+  margin: auto 0;
 }

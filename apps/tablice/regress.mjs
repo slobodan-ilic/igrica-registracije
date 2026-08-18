@@ -169,5 +169,26 @@ check('confirm scores', (await t.$eval('.bar__stats',e=>e.textContent)).includes
   await ctx.close()
 }
 
+// a menu taller than the phone must start at its top and scroll from there
+{
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:390,height:844,isMobile:true,hasTouch:true})
+  await p.goto(`${S}/`,{waitUntil:'networkidle0'}); await pause(600)
+  const m=await p.evaluate(()=>{
+    const shell=document.querySelector('.shell--center'), intro=document.querySelector('.intro')
+    const box=shell.getBoundingClientRect()
+    const above=intro.getBoundingClientRect().top-box.top
+    shell.scrollTop=shell.scrollHeight
+    const last=document.querySelector('.siblings__row')??intro.lastElementChild
+    return {taller:intro.getBoundingClientRect().height>shell.clientHeight, above,
+      below:box.bottom-last.getBoundingClientRect().bottom}})
+  // Serbia's menu is the tallest in the app; if it ever stops overflowing this
+  // check is proving nothing and should say so rather than pass quietly.
+  check('a tall menu is not cut off at the top', m.taller && m.above>=0 && m.below>=0,
+    m.taller?`${m.above.toFixed(0)}px above, ${m.below.toFixed(0)}px below at full scroll`
+            :'MENU NO LONGER OVERFLOWS — check proves nothing')
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await b.close()
