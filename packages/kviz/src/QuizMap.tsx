@@ -414,6 +414,34 @@ export function QuizMap({
         </div>
       )}
 
+      {/* Pinching is the natural gesture and now works, but it is invisible and
+          it is two-handed. These do the same job with a thumb, and say plainly
+          that the map zooms at all. */}
+      <div className="map__zoom">
+        <button
+          type="button"
+          className="map__zoombtn"
+          onClick={() => map.zoomBy(1.6)}
+          disabled={!map.canZoomIn}
+          aria-label="Uvećaj mapu"
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 3.5v9M3.5 8h9" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className="map__zoombtn"
+          onClick={() => map.zoomBy(1 / 1.6)}
+          disabled={!map.canZoomOut}
+          aria-label="Umanji mapu"
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M3.5 8h9" />
+          </svg>
+        </button>
+      </div>
+
       <div className={`map__hint${armed ? ' map__hint--hidden' : ''}`}>
         {map.view.k > 1.02 ? (
           <button className="map__reset" onClick={map.reset}>

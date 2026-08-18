@@ -136,5 +136,38 @@ check('confirm scores', (await t.$eval('.bar__stats',e=>e.textContent)).includes
   await ctx.close()
 }
 
+// the map zooms itself, and refuses to let the browser zoom the page instead
+{
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:420,height:860,isMobile:true,hasTouch:true})
+  await p.goto(`${S}/igra?n=5&s=proba`,{waitUntil:'networkidle0'}); await pause(700)
+
+  const scale=()=>p.$eval('.map__svg g',g=>Number(g.getAttribute('transform').match(/scale\(([\d.]+)\)/)[1]))
+  const at=await scale()
+  await p.click('.map__zoom .map__zoombtn:nth-child(1)'); await pause(250)
+  const bigger=await scale()
+  await p.click('.map__zoom .map__zoombtn:nth-child(2)'); await pause(250)
+  const back=await scale()
+  check('the buttons zoom the map', at===1 && bigger>at && Math.abs(back-at)<0.01,
+    `${at} -> ${bigger.toFixed(2)} -> ${back.toFixed(2)}`)
+
+  // Two fingers on the map must be the map's gesture, not the browser's: if the
+  // default is left standing, iOS zooms the whole page instead.
+  const refused=await p.evaluate(()=>{
+    const el=document.querySelector('.map__svg')
+    const r=el.getBoundingClientRect()
+    const touch=(id,x,y)=>new Touch({identifier:id,target:el,clientX:x,clientY:y})
+    const two=[touch(1,r.x+r.width*0.4,r.y+r.height*0.4),touch(2,r.x+r.width*0.6,r.y+r.height*0.6)]
+    const move=new TouchEvent('touchmove',{touches:two,targetTouches:two,changedTouches:two,
+      bubbles:true,cancelable:true})
+    el.dispatchEvent(move)
+    const gesture=new Event('gesturestart',{bubbles:true,cancelable:true})
+    el.dispatchEvent(gesture)
+    return {move:move.defaultPrevented, gesture:gesture.defaultPrevented}})
+  check('two fingers on the map do not zoom the page', refused.move && refused.gesture,
+    `touchmove ${refused.move?'refused':'ALLOWED'}, gesturestart ${refused.gesture?'refused':'ALLOWED'}`)
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await b.close()

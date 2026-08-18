@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/plate.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <!-- The map handles its own pinch, so the page no longer has to be locked
+         against zooming. maximum-scale was ignored by iOS anyway, and on
+         everything else it took page zoom away from people who need it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f2f1ec" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#131519" media="(prefers-color-scheme: dark)" />
     <meta

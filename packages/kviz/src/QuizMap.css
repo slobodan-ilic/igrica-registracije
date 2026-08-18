@@ -141,6 +141,51 @@
 
 .map__reset:hover { border-color: var(--accent); color: var(--accent); }
 
+/* ---------- zoom buttons ---------- */
+
+.map__zoom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.map__zoombtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(20, 22, 26, 0.05);
+  cursor: pointer;
+}
+
+.map__zoombtn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.map__zoombtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.map__zoombtn:disabled { opacity: 0.4; cursor: default; }
+
+/* A thumb needs more than a cursor does, and there is room for it. */
+@media (hover: none) {
+  .map__zoombtn { width: 42px; height: 42px; }
+  .map__zoombtn svg { width: 19px; height: 19px; }
+}
+
 @media (max-width: 560px) {
   .map__hint--hidden { opacity: 0; }
 

@@ -99,6 +99,40 @@ export function useMapView({ width, height, svgRef, onTap, onDrag }: Options) {
     return () => el.removeEventListener('wheel', onWheel)
   }, [svgRef, toView, zoomAbout])
 
+  /**
+   * Safari does not honour `touch-action` for its own pinch-to-zoom, and has
+   * ignored `maximum-scale` since iOS 10. Left alone, two fingers on the map
+   * zoom the whole page — plate, score, the lot — rather than the map, which is
+   * the one thing the gesture is for. So WebKit's gesture events are refused
+   * outright, and so is any touchmove carrying more than one finger.
+   *
+   * Bound directly rather than through React, which registers touch handlers as
+   * passive: preventDefault() inside one of those does nothing but warn.
+   */
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el) return
+    const refuse = (e: Event) => e.preventDefault()
+    const refuseMulti = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault()
+    }
+    const opts = { passive: false }
+    el.addEventListener('touchmove', refuseMulti, opts)
+    // WebKit only, and absent from the DOM lib's event map.
+    for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+      el.addEventListener(type, refuse, opts)
+    }
+    return () => {
+      el.removeEventListener('touchmove', refuseMulti)
+      for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+        el.removeEventListener(type, refuse)
+      }
+    }
+  }, [svgRef])
+
+  /** Zoom about the middle of the map, for the buttons. */
+  const zoomBy = useCallback((factor: number) => zoomAbout({ x: 0, y: 0 }, factor), [zoomAbout])
+
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId)
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -181,6 +215,9 @@ export function useMapView({ width, height, svgRef, onTap, onDrag }: Options) {
     view,
     transform,
     reset,
+    zoomBy,
+    canZoomIn: view.k < MAX_SCALE - 0.01,
+    canZoomOut: view.k > MIN_SCALE + 0.01,
     handlers: { onPointerDown, onPointerMove, endPointer },
   }
 }
