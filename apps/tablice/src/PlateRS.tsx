@@ -21,12 +21,13 @@ function Flag() {
 }
 
 /**
- * A Serbian plate: the tricolour band, the small arms of Serbia, and the code
- * repeated small in Cyrillic beneath them.
+ * A Serbian plate: the tricolour band, the shield, and the code repeated small
+ * in Cyrillic beneath it.
  *
- * The arms are the real ones from Commons; see scripts/build-grbovi.mjs. What
- * was drawn here before was the cross and four firesteels alone, which is the
- * shield on the eagle's breast rather than the arms a plate carries.
+ * The shield is the cross and four firesteels — no crown and no eagle. The
+ * small arms of Serbia put that shield on a crowned double-headed eagle, but
+ * that is a grander thing than a number plate gets. It is the real artwork
+ * from Commons; see scripts/build-grbovi.mjs.
  */
 export function PlateRS({ code }: { code: string }) {
   return (

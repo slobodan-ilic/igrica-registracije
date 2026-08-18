@@ -31,10 +31,10 @@ const app = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const NATIONAL = {
   hr: 'Coat of arms of Croatia.svg',
   me: 'Coat of arms of Montenegro.svg',
-  // Serbia's plates carry the small arms — the crowned double-headed eagle,
-  // with the cross and four firesteels on its breast. What was drawn here
-  // before was only that inescutcheon, which is a different thing.
-  rs: 'Coat of arms of Serbia small.svg',
+  // Serbia's plates carry the shield alone — the cross and four firesteels, no
+  // crown and no eagle. The small arms with the crowned double-headed eagle
+  // are a grander thing than a number plate gets.
+  rs: 'Serbian Cross.svg',
 }
 
 /** Registration code -> the Commons file holding its town's arms. */
