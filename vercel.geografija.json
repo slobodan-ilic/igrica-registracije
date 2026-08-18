@@ -3,5 +3,10 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build -w @kviz/geografija",
   "outputDirectory": "apps/geografija/dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/((?!_vercel/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }

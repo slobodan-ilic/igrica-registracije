@@ -42,6 +42,25 @@ screen are all read back out of that list rather than counted up as play goes
 on, which is what makes a finished round something that can be summarised,
 shared and — once there are accounts — stored.
 
+## Counting who plays
+
+Not wired up yet, and it needs one switch flipped first: **Vercel → the project
+→ Analytics → Enable Web Analytics**. Until that is on, the script the page
+would ask for is not served, and a 404 in the console is worse than not
+counting. Once it is on, each app's `main.tsx` takes two lines:
+
+```ts
+import { inject } from '@vercel/analytics'
+if (import.meta.env.PROD) inject()
+```
+
+Page views only — no cookies, no accounts, nothing about a person. It answers
+"is anyone playing", which is not the question signing in answers.
+
+Note that `vercel.*.json` deliberately keeps `/_vercel/*` out of the
+single-page rewrite. Without that the catch-all hands back `index.html` for the
+analytics script, and the browser tries to parse a page of HTML as JavaScript.
+
 ## Running them
 
 ```sh
