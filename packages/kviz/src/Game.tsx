@@ -2,8 +2,9 @@ import { useCallback, useMemo } from 'react'
 import { QuizMap } from './QuizMap'
 import { BackLink, Stat, Streak, ThemeToggle } from './Chrome'
 import { ContactSheet, Photo } from './Photo'
-import { hasChooser, href, linkProps } from './router'
+import { hasChooser, href, linkProps, navigate, type Round } from './router'
 import { joinSr } from './deck'
+import { randomSeed } from './deck'
 import { CHOICES, useRound } from './useRound'
 import type { Theme } from './prefs'
 import type { Topic, TopicData } from './topic'
@@ -16,19 +17,20 @@ type Props = {
   byCode: Map<string, RegionProps>
   centroids: Map<string, [number, number]>
   playable: Set<string>
-  length: number
-  easy: boolean
+  /** What round this is: how long, dealt from which seed, played how. */
+  round: Round
   touch: boolean
   theme: Theme
   onTheme: (t: Theme) => void
-  /** Replaying lands on the same URL, so the round is restarted by remounting. */
-  onReplay: () => void
 }
 
 export function Game(props: Props) {
-  const { topic, data, codes, byCode, centroids, playable, length, easy, touch, theme, onTheme } =
-    props
-  const round = useRound({ codes, byCode, centroids, length, easy })
+  const { topic, data, codes, byCode, centroids, playable, touch, theme, onTheme } = props
+  const { length, easy, seed } = props.round
+  const round = useRound({ codes, byCode, centroids, length, easy, seed })
+
+  // A fresh seed is a fresh round, and the URL says so — no remount trickery.
+  const again = () => navigate(href.game(topic.id, { ...props.round, seed: randomSeed() }))
 
   const describe = useCallback(
     (regionCode: string, isAnswered: boolean) => {
@@ -68,7 +70,7 @@ export function Game(props: Props) {
         />
 
         <div className="intro__actions">
-          <button className="btn" onClick={props.onReplay}>
+          <button className="btn" onClick={again}>
             Igraj ponovo
           </button>
           <a className="btn" {...linkProps(href.setup(topic.id))}>

@@ -17,13 +17,30 @@ packages/
   build/       the dataset builders' shared parts: fetch and cache, geometry,
                transliteration, OSM relation assembly, Wikipedia and Commons
 apps/
-  tablice/     one topic, so the URL has no topic in it and its menu is /
+  tablice/     six countries, one of them at the root, so its menu is /
   geografija/  four topics, so it has a chooser
 ```
 
 An app supplies **topics and a name**; everything else comes from the engine.
 A topic is a dataset plus how its question reads (`src/topics.tsx` in each app).
 Nothing in `QuizMap` knows what a licence plate is.
+
+## A round is its URL
+
+`/jugoslavija/igra?n=10&s=8fa2&m=lako` is not a link to the quiz, it is a link
+to **that round**: ten questions, dealt from seed `8fa2`, played on easy. Open
+it tomorrow or send it to someone else and the same questions come up in the
+same order, with the same four choices offered.
+
+Rounds are therefore drawn from a seeded shuffle rather than from chance, and
+a round arriving without a seed is given one before play starts. Playing again
+mints a new seed and navigates — there is no hidden restart.
+
+`useRound` keeps one append-only list of answers, each holding what was picked
+and how long it took. The score, the streak, the progress map and the end
+screen are all read back out of that list rather than counted up as play goes
+on, which is what makes a finished round something that can be summarised,
+shared and — once there are accounts — stored.
 
 ## Running them
 

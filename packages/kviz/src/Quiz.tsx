@@ -3,9 +3,9 @@ import { geoCentroid } from 'd3-geo'
 import { Setup } from './Setup'
 import { Game } from './Game'
 import { ThemeToggle } from './Chrome'
-import { indexByCode, playableCodes } from './deck'
+import { indexByCode, playableCodes, randomSeed } from './deck'
 import { applyTheme, systemTheme, THEMES, usePref, type Theme } from './prefs'
-import { href, navigate, useRoute } from './router'
+import { href, navigate, useRoute, type Round } from './router'
 import { CHOICES } from './useRound'
 import type { Topic, TopicData } from './topic'
 import './styles.css'
@@ -65,7 +65,6 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
   }, [topic, title])
 
   // Datasets are fetched per topic, so the chooser downloads none of them.
-  const [replay, setReplay] = useState(0)
   const [data, setData] = useState<TopicData | null>(null)
   useEffect(() => {
     if (!topic) {
@@ -82,8 +81,18 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
     }
   }, [topic])
 
+  // A round without a seed is not yet a round anyone could be sent, so one is
+  // minted and put in the URL before play starts.
+  useEffect(() => {
+    if (route.name === 'game' && route.length > 0 && !route.seed) {
+      navigate(href.game(route.topic, { ...route, seed: randomSeed() }), true)
+    }
+  }, [route])
+
   const regions = data?.regions
-  const withKim = kim === 'on' && (topic?.offersKim ?? false)
+  // In a round the URL decides; on the menu the remembered preference does.
+  const withKim =
+    (route.name === 'game' ? route.kim : kim === 'on') && (topic?.offersKim ?? false)
 
   const codes = useMemo(
     () => (regions ? playableCodes(regions, withKim) : []),
@@ -129,23 +138,23 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
     )
   }
 
-  if (route.name === 'game' && route.length > 0) {
+  if (route.name === 'game' && route.length > 0 && route.seed) {
+    const settings: Round = { ...route, kim: withKim }
     return (
       <main className="shell shell--game">
         <Game
-          key={`${topic.id}-${route.length}-${mode}-${withKim}-${replay}`}
+          // The round's identity is its settings, so a new seed is a new round.
+          key={href.game(topic.id, settings)}
           topic={topic}
           data={data}
           codes={codes}
           byCode={byCode}
           centroids={centroids}
           playable={playable}
-          length={route.length}
-          easy={mode === 'easy'}
+          round={settings}
           touch={touch}
           theme={theme}
           onTheme={setTheme}
-          onReplay={() => setReplay((r) => r + 1)}
         />
       </main>
     )

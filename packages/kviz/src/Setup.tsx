@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { BackLink } from './Chrome'
 import { hasChooser, href, linkProps } from './router'
+import { randomSeed } from './deck'
 import { plural } from './sr'
 import type { Topic } from './topic'
 import type { RegionProps } from './types'
@@ -27,6 +29,10 @@ export function Setup({
   const rounds = [10, 25, codes.length].filter(
     (n, i, a) => a.indexOf(n) === i && n <= codes.length,
   )
+
+  // One seed per visit to this page, so the three buttons offer one round in
+  // three lengths rather than three unrelated ones — and reloading deals anew.
+  const seed = useMemo(() => randomSeed(), [])
 
   return (
     <div className="intro">
@@ -70,7 +76,13 @@ export function Setup({
 
       <div className="intro__actions">
         {rounds.map((n) => (
-          <a key={n} className="btn" {...linkProps(href.game(topic.id, n))}>
+          <a
+            key={n}
+            className="btn"
+            {...linkProps(
+              href.game(topic.id, { length: n, seed, easy: mode === 'easy', kim: withKim }),
+            )}
+          >
             {n === codes.length
               ? `${topic.allLabel} · ${n}`
               : `${n} ${plural(n, 'pitanje', 'pitanja', 'pitanja')}`}

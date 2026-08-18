@@ -109,5 +109,32 @@ check('confirm scores', (await t.$eval('.bar__stats',e=>e.textContent)).includes
   await mouse.close()
 }
 
+// a round is its URL: the same seed always deals the same questions, which is
+// what makes a result shareable as a challenge and a daily quiz possible
+{
+  const ctx=await b.createBrowserContext()
+  const asked=async url=>{const p=await ctx.newPage(); await p.setViewport({width:1440,height:900})
+    await p.goto(`${S}${url}`,{waitUntil:'networkidle0'}); await pause(500)
+    const q=await p.evaluate(()=>document.querySelector('.plate__code')?.textContent)
+    const at=p.url().replace(S,''); await p.close(); return {q,at}}
+
+  const same=[]; for(let i=0;i<3;i++) same.push((await asked('/igra?n=5&s=proba')).q)
+  check('same seed deals the same round', same.every(q=>q&&q===same[0]), same.join(' '))
+
+  const spread=new Set(); for(const s of ['a1','b2','c3','d4','e5','f6']) spread.add((await asked(`/igra?n=5&s=${s}`)).q)
+  check('different seeds deal different rounds', spread.size>=4, `${spread.size} distinct of 6`)
+
+  const minted=await asked('/igra?n=5')
+  check('a seedless round mints a seed into the URL', /[?&]s=[a-z0-9]+/.test(minted.at), minted.at)
+
+  const carried=await asked('/hrvatska/igra?n=5&s=proba&m=lako')
+  const lit=await (async()=>{const p=await ctx.newPage(); await p.setViewport({width:1440,height:900})
+    await p.goto(`${S}/hrvatska/igra?n=5&s=proba&m=lako`,{waitUntil:'networkidle0'}); await pause(500)
+    const n=await p.$$eval('[data-code]',els=>els.filter(e=>!e.className.baseVal.includes('--off')).length)
+    await p.close(); return n})()
+  check('the URL carries how it is played, not just how long', carried.q&&lit>0&&lit<=8, `${lit} areas live`)
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await b.close()

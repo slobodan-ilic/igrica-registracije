@@ -20,10 +20,23 @@ import { useEffect, useState } from 'react'
  * click behind a chooser. It also covers the single-topic case, where there is
  * simply nothing else to route to.
  */
+/**
+ * Everything that makes a round what it is. A round's URL is the round: same
+ * link, same questions, in the same order, played the same way — which is what
+ * lets a result be shared as a challenge rather than as a boast.
+ */
+export type Round = {
+  length: number
+  /** Absent only until the app mints one; see Quiz. */
+  seed: string
+  easy: boolean
+  kim: boolean
+}
+
 export type Route =
   | { name: 'home' }
   | { name: 'setup'; topic: string }
-  | { name: 'game'; topic: string; length: number }
+  | ({ name: 'game'; topic: string } & Round)
 
 /**
  * The topic served at `/`, or null when the front page is a chooser. Set once
@@ -39,9 +52,20 @@ export const setRootTopic = (id: string | null) => {
 /** Whether there is a chooser to go back to, or a topic sitting at the root. */
 export const hasChooser = () => root === null
 
-const length = (search: string) => {
-  const n = Number(new URLSearchParams(search).get('n'))
-  return Number.isFinite(n) && n > 0 ? n : 0
+/**
+ * The round in the query string. Anything missing takes the plainest reading,
+ * not the player's saved preference: a link has to mean the same thing to
+ * whoever opens it.
+ */
+const round = (search: string): Round => {
+  const q = new URLSearchParams(search)
+  const n = Number(q.get('n'))
+  return {
+    length: Number.isFinite(n) && n > 0 ? n : 0,
+    seed: q.get('s') ?? '',
+    easy: q.get('m') === 'lako',
+    kim: q.get('k') === '1',
+  }
 }
 
 export function parseRoute(pathname: string, search: string): Route {
@@ -49,20 +73,25 @@ export function parseRoute(pathname: string, search: string): Route {
 
   if (root) {
     if (!topic) return { name: 'setup', topic: root }
-    if (topic === 'igra') return { name: 'game', topic: root, length: length(search) }
+    if (topic === 'igra') return { name: 'game', topic: root, ...round(search) }
   } else if (!topic) {
     return { name: 'home' }
   }
 
-  if (section === 'igra') return { name: 'game', topic, length: length(search) }
+  if (section === 'igra') return { name: 'game', topic, ...round(search) }
   return { name: 'setup', topic }
 }
+
+const query = ({ length, seed, easy, kim }: Round) =>
+  [`n=${length}`, seed && `s=${seed}`, easy && 'm=lako', kim && 'k=1']
+    .filter(Boolean)
+    .join('&')
 
 export const href = {
   home: () => '/',
   setup: (topic: string) => (topic === root ? '/' : `/${topic}`),
-  game: (topic: string, n: number) =>
-    topic === root ? `/igra?n=${n}` : `/${topic}/igra?n=${n}`,
+  game: (topic: string, r: Round) =>
+    `${topic === root ? '' : `/${topic}`}/igra?${query(r)}`,
 }
 
 export function navigate(to: string, replace = false) {

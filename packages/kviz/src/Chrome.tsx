@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { linkProps } from './router'
 import type { Theme } from './prefs'
 
 export function ThemeToggle({
@@ -58,12 +59,7 @@ export function Stat({ label, value }: { label: string; value: ReactNode }) {
 /** Back to the previous screen, shown top-left on every page but home. */
 export function BackLink({ to, label }: { to: string; label: string }) {
   return (
-    <a className="back" href={to} onClick={(e) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey) return
-      e.preventDefault()
-      window.history.pushState(null, '', to)
-      window.dispatchEvent(new PopStateEvent('popstate'))
-    }}>
+    <a className="back" {...linkProps(to)}>
       <svg viewBox="0 0 16 16" aria-hidden="true">
         <path d="M10 3 5 8l5 5" />
       </svg>
