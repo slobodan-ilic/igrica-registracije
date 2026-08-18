@@ -26,3 +26,6 @@ dist-ssr
 
 # Downloaded source data, re-fetched by the build:* scripts on demand (~200 MB)
 .cache
+
+# Vercel pulls the database credentials in here; they are not ours to commit
+.env*.local

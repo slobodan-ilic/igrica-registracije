@@ -5,7 +5,7 @@
   "outputDirectory": "apps/geografija/dist",
   "rewrites": [
     {
-      "source": "/((?!_vercel/).*)",
+      "source": "/((?!api/|_vercel/).*)",
       "destination": "/index.html"
     }
   ]
