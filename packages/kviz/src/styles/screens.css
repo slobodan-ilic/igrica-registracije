@@ -9,6 +9,68 @@
   text-align: center;
 }
 
+/* ---------- a topic's menu, in two columns ---------- */
+
+/* Wide enough for the plate to sit beside the invitation rather than on top of
+   it, so the first thing read is the question and not the specimen. */
+.intro--menu { max-width: 940px; }
+
+.menu {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr);
+  /* Aligned to the top, not centred: centring each column separately would
+     float Serbia's plate higher than everyone else's, because its column also
+     carries the Kosovo switch. The plate is the one thing on the page that
+     should not move when you step from country to country. */
+  align-items: start;
+  gap: 44px;
+  text-align: left;
+}
+
+.menu__show {
+  display: flex;
+  flex-direction: column;
+  /* Clears the eyebrow, so the plate reads as level with the title. */
+  padding-top: 26px;
+  gap: 16px;
+}
+
+.menu .intro__lead { margin: 14px 0 26px; max-width: 42ch; }
+.menu .intro__actions { justify-content: flex-start; }
+.menu .intro__hero { margin: 0; }
+/* Beside the plate it is an aside about the plate, so it stops being a banner
+   across the middle of the page. */
+.menu .switch { max-width: none; margin: 0; }
+
+/* One column below that, and the order changes with it: the question first,
+   then the plate it is asking about, then how to play. */
+@media (max-width: 880px) {
+  .menu {
+    display: flex;
+    flex-direction: column;
+    /* Back to full width: the top alignment the two-column layout wants would
+       here shrink every row to the width of its own text. */
+    align-items: stretch;
+    gap: 0;
+    text-align: center;
+  }
+
+  /* The wrappers stop being boxes so their contents can be interleaved — the
+     question, then the plate, then how to play. */
+  .menu__say,
+  .menu__show { display: contents; }
+
+  .menu__show { padding-top: 0; }
+
+  .menu .intro__eyebrow { order: 1; }
+  .menu .intro__title { order: 2; }
+  .menu .intro__hero { order: 3; margin: 22px 0 24px; }
+  .menu .intro__lead { order: 4; margin: 0 auto 26px; max-width: 46ch; }
+  .menu .modes { order: 5; }
+  .menu .switch { order: 6; margin: 0 auto 24px; max-width: 44ch; }
+  .menu .intro__actions { order: 7; justify-content: center; }
+}
+
 .intro__hero {
   margin-bottom: 26px;
   animation: hero-in 520ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
@@ -299,8 +361,12 @@
   transform: translateY(-2px);
 }
 
-/* Each shows its own plate, so the difference is visible before you click. */
-.sibling__preview .plate { --plate-h: 42px; }
+/* Each shows its own plate, so the difference is visible before you click.
+   Small enough that five of them stay on one line: four and a lone fifth
+   reads as an accident rather than a row. */
+.sibling__preview .plate { --plate-h: 38px; }
+
+.sibling { padding: 12px 12px 10px; }
 
 .sibling__label {
   font-size: 14px;

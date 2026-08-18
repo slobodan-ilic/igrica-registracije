@@ -10,15 +10,16 @@ import { useEffect, useState } from 'react'
  *                   /:topic      that topic's menu
  *                   /:topic/igra a round
  *
- *   root topic      /            the root topic's menu — there is no chooser
- *                   /igra        a round of it
- *                   /:topic      another topic's menu
- *                   /:topic/igra a round of that
+ *   root topic      /            a doorway to the root topic — no chooser
+ *                   /:topic      that topic's menu, the root topic included
+ *                   /:topic/igra a round of it
  *
  * The second shape is for an app with a clear flagship: the plate quiz opens on
- * Serbia at `/`, and Croatia lives at `/hrvatska` rather than both sitting one
- * click behind a chooser. It also covers the single-topic case, where there is
- * simply nothing else to route to.
+ * Serbia, so `/` leads there — but it leads there, it is not a second address
+ * for it. Every topic has one path of its own, so Serbia is `/srbija` like
+ * Croatia is `/hrvatska`, and a link to a country looks the same whichever
+ * country it is. The older rootless forms are still read, since rounds have
+ * been shared as `/igra?n=10`.
  */
 /**
  * Everything that makes a round what it is. A round's URL is the round: same
@@ -89,9 +90,23 @@ const query = ({ length, seed, easy, kim }: Round) =>
 
 export const href = {
   home: () => '/',
-  setup: (topic: string) => (topic === root ? '/' : `/${topic}`),
-  game: (topic: string, r: Round) =>
-    `${topic === root ? '' : `/${topic}`}/igra?${query(r)}`,
+  setup: (topic: string) => `/${topic}`,
+  game: (topic: string, r: Round) => `/${topic}/igra?${query(r)}`,
+}
+
+/**
+ * Where a route ought to live. `/` and the old `/igra` forms still work and are
+ * quietly rewritten to the address a person would be given, so what is in the
+ * bar is always something worth copying.
+ */
+export function canonical(route: Route): string | null {
+  if (route.name === 'home') return null
+  if (route.name === 'game') {
+    return route.length > 0 && route.seed
+      ? href.game(route.topic, route)
+      : href.setup(route.topic)
+  }
+  return href.setup(route.topic)
 }
 
 export function navigate(to: string, replace = false) {

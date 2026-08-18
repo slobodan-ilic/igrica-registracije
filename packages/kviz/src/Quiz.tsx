@@ -5,7 +5,7 @@ import { Game } from './Game'
 import { ThemeToggle } from './Chrome'
 import { indexByCode, playableCodes, randomSeed } from './deck'
 import { applyTheme, systemTheme, THEMES, usePref, type Theme } from './prefs'
-import { href, navigate, useRoute, type Round } from './router'
+import { canonical, href, navigate, useRoute, type Round } from './router'
 import { CHOICES } from './useRound'
 import type { Topic, TopicData } from './topic'
 import './styles.css'
@@ -82,11 +82,15 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
   }, [topic])
 
   // A round without a seed is not yet a round anyone could be sent, so one is
-  // minted and put in the URL before play starts.
+  // minted and put in the URL before play starts. Everything else is nudged to
+  // the address it ought to have — navigate is a no-op when it is already there.
   useEffect(() => {
     if (route.name === 'game' && route.length > 0 && !route.seed) {
       navigate(href.game(route.topic, { ...route, seed: randomSeed() }), true)
+      return
     }
+    const where = canonical(route)
+    if (where) navigate(where, true)
   }, [route])
 
   const regions = data?.regions

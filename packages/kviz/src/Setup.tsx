@@ -35,59 +35,72 @@ export function Setup({
   const seed = useMemo(() => randomSeed(), [])
 
   return (
-    <div className="intro">
+    <div className="intro intro--menu">
       {/* With one quiz this page is the front page, so there is nowhere back. */}
       {hasChooser() && <BackLink to={href.home()} label="Sve igre" />}
 
-      <div className="intro__hero">{topic.prompt(hero)}</div>
-      <p className="intro__eyebrow">{topic.blurb}</p>
-      <h1 className="intro__title">{topic.title}</h1>
-      <p className="intro__lead">{topic.lead(codes.length)}</p>
+      {/* Two columns on a wide screen: what the quiz is and how to start it on
+          the left, the plate on the right. The left column is word for word the
+          same shape in every country — Serbia's Kosovo switch belongs to the
+          plate rather than to the invitation, so it sits under it and nothing
+          below it moves. On a narrow screen the whole thing folds back into one
+          column, in the order it reads best: the question, then the plate. */}
+      <div className="menu">
+        <div className="menu__say">
+          <p className="intro__eyebrow">{topic.blurb}</p>
+          <h1 className="intro__title">{topic.title}</h1>
+          <p className="intro__lead">{topic.lead(codes.length)}</p>
 
-      <div className="modes" role="group" aria-label="Težina">
-        <button
-          type="button"
-          className={`mode${mode === 'easy' ? ' mode--on' : ''}`}
-          onClick={() => onMode('easy')}
-        >
-          <b>Lako</b>
-          <em>{choices} ponuđena područja</em>
-        </button>
-        <button
-          type="button"
-          className={`mode${mode === 'classic' ? ' mode--on' : ''}`}
-          onClick={() => onMode('classic')}
-        >
-          <b>Klasično</b>
-          <em>cela mapa</em>
-        </button>
-      </div>
+          <div className="modes" role="group" aria-label="Težina">
+            <button
+              type="button"
+              className={`mode${mode === 'easy' ? ' mode--on' : ''}`}
+              onClick={() => onMode('easy')}
+            >
+              <b>Lako</b>
+              <em>{choices} ponuđena područja</em>
+            </button>
+            <button
+              type="button"
+              className={`mode${mode === 'classic' ? ' mode--on' : ''}`}
+              onClick={() => onMode('classic')}
+            >
+              <b>Klasično</b>
+              <em>cela mapa</em>
+            </button>
+          </div>
 
-      {topic.offersKim && (
-        <label className="switch">
-          <input type="checkbox" checked={withKim} onChange={(e) => onKim(e.target.checked)} />
-          <span className="switch__track" aria-hidden="true" />
-          <span className="switch__text">
-            Kosovo i Metohija
-            <em>{topic.kimNote?.(kimCount)}</em>
-          </span>
-        </label>
-      )}
+          <div className="intro__actions">
+            {rounds.map((n) => (
+              <a
+                key={n}
+                className="btn"
+                {...linkProps(
+                  href.game(topic.id, { length: n, seed, easy: mode === 'easy', kim: withKim }),
+                )}
+              >
+                {n === codes.length
+                  ? `${topic.allLabel} · ${n}`
+                  : `${n} ${plural(n, 'pitanje', 'pitanja', 'pitanja')}`}
+              </a>
+            ))}
+          </div>
+        </div>
 
-      <div className="intro__actions">
-        {rounds.map((n) => (
-          <a
-            key={n}
-            className="btn"
-            {...linkProps(
-              href.game(topic.id, { length: n, seed, easy: mode === 'easy', kim: withKim }),
-            )}
-          >
-            {n === codes.length
-              ? `${topic.allLabel} · ${n}`
-              : `${n} ${plural(n, 'pitanje', 'pitanja', 'pitanja')}`}
-          </a>
-        ))}
+        <div className="menu__show">
+          <div className="intro__hero">{topic.prompt(hero)}</div>
+
+          {topic.offersKim && (
+            <label className="switch">
+              <input type="checkbox" checked={withKim} onChange={(e) => onKim(e.target.checked)} />
+              <span className="switch__track" aria-hidden="true" />
+              <span className="switch__text">
+                Kosovo i Metohija
+                <em>{topic.kimNote?.(kimCount)}</em>
+              </span>
+            </label>
+          )}
+        </div>
       </div>
 
       {/* With a topic at the root there is no chooser, so the other topics are
