@@ -1,10 +1,11 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { QuizMap } from './QuizMap'
 import { BackLink, Stat, Streak, ThemeToggle } from './Chrome'
 import { ContactSheet, Photo } from './Photo'
 import { hasChooser, href, linkProps, navigate, type Round } from './router'
 import { joinSr } from './deck'
 import { randomSeed } from './deck'
+import { record } from './history'
 import { CHOICES, useRound } from './useRound'
 import type { Theme } from './prefs'
 import type { Topic, TopicData } from './topic'
@@ -31,6 +32,25 @@ export function Game(props: Props) {
 
   // A fresh seed is a fresh round, and the URL says so — no remount trickery.
   const again = () => navigate(href.game(topic.id, { ...props.round, seed: randomSeed() }))
+
+  // Kept the moment it is over, and only then: an abandoned round is not a
+  // result. The guard is because `done` stays true while the summary is on
+  // screen, and this must happen once rather than on every render of it.
+  const kept = useRef(false)
+  useEffect(() => {
+    if (!round.done || kept.current) return
+    kept.current = true
+    record({
+      topic: topic.id,
+      seed,
+      length,
+      easy,
+      kim: props.round.kim,
+      score: round.score,
+      ms: round.answers.reduce((t, a) => t + a.ms, 0),
+      answers: round.answers,
+    })
+  }, [round.done, round.answers, round.score, topic.id, seed, length, easy, props.round.kim])
 
   const describe = useCallback(
     (regionCode: string, isAnswered: boolean) => {

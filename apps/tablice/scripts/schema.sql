@@ -15,7 +15,11 @@ create table if not exists player (
 );
 
 create table if not exists round (
-  id          uuid        primary key default gen_random_uuid(),
+  -- Minted by the browser when the round ends, so syncing the same round twice
+  -- is harmless. Identity deliberately does not come from what the round was:
+  -- playing the same seed again is a second round, and a stats page that
+  -- swallowed the rematch would be lying about how much someone had played.
+  id          uuid        primary key,
   player      text        not null references player(sub) on delete cascade,
   -- Which quiz, and which round of it. The seed and length are what make a
   -- round reproducible, so a stored round can be played again exactly.
@@ -27,9 +31,7 @@ create table if not exists round (
   kim         boolean     not null,
   score       int         not null,
   ms          int         not null,
-  finished_at timestamptz not null default now(),
-  -- One row per round per player, so replaying a sync is harmless.
-  unique (player, app, topic, seed, length, easy, kim)
+  finished_at timestamptz not null default now()
 );
 
 create table if not exists answer (

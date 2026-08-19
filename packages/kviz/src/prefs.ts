@@ -11,6 +11,9 @@ export const setStorageNamespace = (ns: string) => {
   NS = `${ns}.`
 }
 
+/** Which app this is, for records that will one day be shared with a server. */
+export const appName = () => NS.replace(/\.$/, '')
+
 function read(key: string): string | null {
   try {
     return localStorage.getItem(NS + key)
@@ -42,6 +45,24 @@ export function usePref<T extends string>(
   })
   useEffect(() => write(key, value), [key, value])
   return [value, setValue]
+}
+
+/**
+ * Anything larger than a setting: the rounds you have played, so far. Parsed
+ * defensively — a half-written or hand-edited value costs you your history,
+ * which is a shame, but it must never stop the app from opening.
+ */
+export function readJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = read(key)
+    return raw ? (JSON.parse(raw) as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+export function writeJson(key: string, value: unknown) {
+  write(key, JSON.stringify(value))
 }
 
 export type Theme = 'light' | 'dark'

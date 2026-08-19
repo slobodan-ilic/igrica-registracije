@@ -228,5 +228,45 @@ if (!process.env.URL) {
   await ctx.close()
 }
 
+// a finished round is kept in the browser, whether or not anyone is signed in
+{
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:1440,height:900})
+  const read=()=>p.evaluate(()=>JSON.parse(localStorage.getItem('tablice.history')||'[]'))
+
+  // two questions, answered by clicking whatever the map says is right
+  await p.goto(`${S}/crnagora/igra?n=2&s=zapis`,{waitUntil:'networkidle0'}); await pause(700)
+  check('nothing is recorded before the end', (await read()).length===0)
+
+  const feats=JSON.parse(readFileSync('data/crnagora.json','utf8')).features.map(f=>f.properties)
+  for (let i=0;i<2;i++){
+    const asked=await p.evaluate(()=>document.querySelector('.plate__code')?.textContent)
+    const code=feats.find(f=>f.code===asked).code
+    const pt=await p.evaluate(c=>{const el=document.querySelector(`[data-code="${c}"]`)
+      const r=el.getBoundingClientRect()
+      for(let fy=0.25;fy<0.85;fy+=0.06)for(let fx=0.25;fx<0.85;fx+=0.06){
+        const x=r.x+r.width*fx,y=r.y+r.height*fy
+        if(document.elementFromPoint(x,y)?.closest('[data-code]')===el)return{x,y}}
+      return {x:r.x+r.width/2,y:r.y+r.height/2}},code)
+    await p.mouse.click(pt.x,pt.y); await pause(1400)
+  }
+  await pause(800)
+  // A check that never reached the end would prove nothing about the ending.
+  check('the round actually finished',
+    await p.evaluate(()=>document.querySelector('.intro__eyebrow')?.textContent==='Kraj partije'))
+
+  const kept=await read()
+  const r=kept[0]
+  check('a finished round is kept', kept.length===1 && r?.answers?.length===2,
+    `${kept.length} round(s), ${r?.answers?.length} answer(s)`)
+  check('it records what the round was', r?.topic==='crnagora' && r?.seed==='zapis' && r?.length===2 && r?.app==='tablice',
+    `${r?.app}/${r?.topic} seed ${r?.seed}`)
+  check('it records what was picked, not just whether it was right',
+    r?.answers.every(a=>a.code&&a.picked&&typeof a.correct==='boolean'&&a.ms>=0),
+    r?.answers.map(a=>`${a.code}${a.correct?'=':'→'}${a.picked}`).join(' '))
+  check('every round is minted with its own id', /^[0-9a-f-]{8,}/.test(r?.id||''), r?.id?.slice(0,13))
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await b.close()
