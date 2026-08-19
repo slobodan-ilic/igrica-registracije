@@ -1,0 +1,124 @@
+// Your rounds, on the server.
+//
+// POST sends up what a browser has been keeping; GET hands back everything
+// that account has ever stored, which is how a second device catches up.
+//
+// Rounds carry an id minted by the browser that played them, so sending the
+// same batch twice stores nothing the second time. That is the whole of the
+// conflict handling, and it is enough: there is one writer per round and it
+// never changes its mind about what happened.
+
+import { db, session, only } from './_lib.js'
+
+/** Enough for a long backlog on first sign-in, small enough to refuse abuse. */
+const MAX_ROUNDS = 200
+const MAX_ANSWERS = 100
+
+const str = (v, max) => (typeof v === 'string' && v.length <= max ? v : null)
+const int = (v, max) => (Number.isInteger(v) && v >= 0 && v <= max ? v : null)
+
+/** A round is taken only if every field of it is what it claims to be. */
+function clean(r) {
+  const id = str(r?.id, 64)
+  const topic = str(r?.topic, 40)
+  const seed = str(r?.seed, 40)
+  const app = str(r?.app, 40)
+  const length = int(r?.length, 1000)
+  const score = int(r?.score, 1000)
+  const ms = int(r?.ms, 86_400_000)
+  const at = int(r?.at, 4_000_000_000_000)
+  if (!id || !topic || !seed || !app || length === null || score === null || ms === null) return null
+  if (score > length) return null
+
+  const answers = Array.isArray(r.answers) ? r.answers.slice(0, MAX_ANSWERS) : []
+  const clean_answers = answers
+    .map((a, step) => ({
+      step,
+      code: str(a?.code, 12),
+      picked: str(a?.picked, 12),
+      correct: typeof a?.correct === 'boolean' ? a.correct : null,
+      ms: int(a?.ms, 86_400_000),
+    }))
+    .filter((a) => a.code && a.picked && a.correct !== null && a.ms !== null)
+
+  return {
+    id, app, topic, seed, length, score, ms,
+    easy: Boolean(r.easy),
+    kim: Boolean(r.kim),
+    at: new Date(at ?? Date.now()).toISOString(),
+    answers: clean_answers,
+  }
+}
+
+export default async function handler(req, res) {
+  const player = await session(req)
+  if (!player) return res.status(401).json({ error: 'not signed in' })
+  const sql = db()
+  try {
+    return await serve(req, res, sql, player)
+  } catch (e) {
+    // Never the message: it can quote the statement, and the statement quotes
+    // the connection this ran on.
+    console.error('rounds:', e)
+    return res.status(500).json({ error: 'could not store that' })
+  }
+}
+
+async function serve(req, res, sql, player) {
+
+  if (req.method === 'GET') {
+    const rounds = await sql`
+      select r.id, r.app, r.topic, r.seed, r.length, r.easy, r.kim, r.score, r.ms,
+             -- float8, or the driver hands epoch milliseconds back as a string
+             (extract(epoch from r.finished_at) * 1000)::float8 as at,
+             coalesce(
+               (select json_agg(json_build_object('code', a.code, 'picked', a.picked,
+                                                  'correct', a.correct, 'ms', a.ms)
+                                order by a.step)
+                from answer a where a.round = r.id),
+               '[]'::json) as answers
+      from round r
+      where r.player = ${player.sub}
+      order by r.finished_at desc
+      limit 500
+    `
+    return res.status(200).json({ rounds })
+  }
+
+  if (!only('POST', req, res)) return
+
+  const sent = Array.isArray(req.body?.rounds) ? req.body.rounds.slice(0, MAX_ROUNDS) : []
+  const rounds = sent.map(clean).filter(Boolean)
+  if (!rounds.length) return res.status(200).json({ stored: [] })
+
+  // A valid session is proof we signed this person in at some point, so the
+  // player they belong to is made sure of rather than assumed. Without this a
+  // session outliving its row — a cleared table, a deleted account — turns
+  // every sync into a foreign key error, which is a 500 for something that is
+  // not the caller's fault.
+  await sql`
+    insert into player (sub, name) values (${player.sub}, ${player.name ?? 'Igrač'})
+    on conflict (sub) do update set seen_at = now()
+  `
+
+  for (const r of rounds) {
+    // Nothing to update on conflict: a finished round does not change.
+    const [row] = await sql`
+      insert into round (id, player, app, topic, seed, length, easy, kim, score, ms, finished_at)
+      values (${r.id}, ${player.sub}, ${r.app}, ${r.topic}, ${r.seed}, ${r.length},
+              ${r.easy}, ${r.kim}, ${r.score}, ${r.ms}, ${r.at})
+      on conflict (id) do nothing
+      returning id
+    `
+    if (row && r.answers.length) {
+      await sql.query(
+        `insert into answer (round, step, code, picked, correct, ms) values ${r.answers
+          .map((_, i) => `($1, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5}, $${i * 5 + 6})`)
+          .join(', ')} on conflict do nothing`,
+        [r.id, ...r.answers.flatMap((a) => [a.step, a.code, a.picked, a.correct, a.ms])],
+      )
+    }
+  }
+
+  res.status(200).json({ stored: rounds.map((r) => r.id) })
+}

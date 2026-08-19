@@ -69,3 +69,52 @@ export const unsynced = () => history().filter((r) => !r.synced)
 export function forget() {
   writeJson(KEY, [])
 }
+
+/**
+ * Send up what this browser has that the server does not, and take down what
+ * the server has that it does not.
+ *
+ * Both halves are safe to repeat: rounds are keyed by the id minted where they
+ * were played, so the server ignores a round it already has and this ignores
+ * one it already knows. Nothing merges and nothing conflicts, because a
+ * finished round never changes.
+ *
+ * Every failure is silent. Syncing is a convenience, and a person mid-round
+ * should never be told their network is unhappy.
+ */
+export async function sync(): Promise<{ up: number; down: number } | null> {
+  const mine = history()
+  const sending = mine.filter((r) => !r.synced)
+
+  let up = 0
+  try {
+    if (sending.length) {
+      const r = await fetch('/api/rounds', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ rounds: sending }),
+      })
+      if (!r.ok) return null // 401 signed out, or the server is unwell
+      const { stored } = (await r.json()) as { stored: string[] }
+      markSynced(stored)
+      up = stored.length
+    }
+
+    const r = await fetch('/api/rounds', { credentials: 'same-origin' })
+    if (!r.ok) return null
+    const { rounds } = (await r.json()) as { rounds: Played[] }
+
+    const known = new Set(history().map((x) => x.id))
+    const fresh = rounds.filter((x) => x && x.id && !known.has(x.id)).map((x) => ({ ...x, synced: true }))
+    if (fresh.length) {
+      writeJson(
+        KEY,
+        [...fresh, ...history()].sort((a, b) => b.at - a.at).slice(0, KEEP),
+      )
+    }
+    return { up, down: fresh.length }
+  } catch {
+    return null
+  }
+}

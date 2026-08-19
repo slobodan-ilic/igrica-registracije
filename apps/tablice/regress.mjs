@@ -268,5 +268,48 @@ if (!process.env.URL) {
   await ctx.close()
 }
 
+// syncing is safe to repeat and safe to fail: the same rounds sent twice store
+// once, and a refusal leaves the browser's own history untouched
+if (!process.env.URL) {
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:1200,height:800})
+  const posted=[]
+  await p.setRequestInterception(true)
+  p.on('request',r=>{
+    const u=r.url()
+    if(u.endsWith('/api/auth/me')) return r.respond({status:200,contentType:'application/json',body:'{"player":{"sub":"s","name":"Proba"}}'})
+    if(u.endsWith('/api/rounds') && r.method()==='POST'){
+      const sent=JSON.parse(r.postData()||'{}').rounds ?? []
+      posted.push(sent.map(x=>x.id))
+      return r.respond({status:200,contentType:'application/json',
+        body:JSON.stringify({stored:sent.map(x=>x.id)})})}
+    if(u.endsWith('/api/rounds')) return r.respond({status:200,contentType:'application/json',
+      body:JSON.stringify({rounds:[{id:'from-elsewhere',app:'tablice',topic:'srbija',seed:'x',
+        length:1,easy:false,kim:false,score:1,ms:10,at:Date.now(),answers:[]}]})})
+    r.continue()
+  })
+
+  // a round this browser played before it ever signed in
+  await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'})
+  await p.evaluate(()=>localStorage.setItem('tablice.history',JSON.stringify([
+    {id:'played-here',app:'tablice',topic:'srbija',seed:'a',length:1,easy:false,kim:false,
+     score:1,ms:100,at:Date.now(),answers:[{code:'NS',picked:'BG',correct:false,ms:100}]}])))
+  await p.reload({waitUntil:'networkidle0'}); await pause(900)
+
+  const after=await p.evaluate(()=>JSON.parse(localStorage.getItem('tablice.history')))
+  check('what was played signed out goes up on sign-in', posted.flat().includes('played-here'),
+    `sent ${JSON.stringify(posted.flat())}`)
+  check('what another device stored comes down', after.some(r=>r.id==='from-elsewhere'))
+  check('rounds already up are not sent again',
+    after.find(r=>r.id==='played-here')?.synced===true)
+
+  // a second visit must not re-send anything
+  posted.length=0
+  await p.reload({waitUntil:'networkidle0'}); await pause(900)
+  check('a later visit sends nothing it has already sent', posted.flat().length===0,
+    `sent ${JSON.stringify(posted.flat())}`)
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await b.close()

@@ -5,7 +5,7 @@ import { ContactSheet, Photo } from './Photo'
 import { hasChooser, href, linkProps, navigate, type Round } from './router'
 import { joinSr } from './deck'
 import { randomSeed } from './deck'
-import { record } from './history'
+import { record, sync } from './history'
 import { CHOICES, useRound } from './useRound'
 import type { Theme } from './prefs'
 import type { Topic, TopicData } from './topic'
@@ -50,6 +50,8 @@ export function Game(props: Props) {
       ms: round.answers.reduce((t, a) => t + a.ms, 0),
       answers: round.answers,
     })
+    // Signed out this is refused and quietly does nothing, which is the point.
+    void sync()
   }, [round.done, round.answers, round.score, topic.id, seed, length, easy, props.round.kim])
 
   const describe = useCallback(

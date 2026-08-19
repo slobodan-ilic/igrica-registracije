@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { sync } from './history'
 
 /**
  * Signing in, which is optional everywhere it appears.
@@ -74,10 +75,19 @@ export function useAccount() {
       if (!live) return
       setPlayer(r?.player ?? null)
       setReady(true)
+      // Signing in on a second device should find the first device's rounds
+      // waiting, so the exchange happens as soon as we know who this is.
+      if (r?.player) void sync()
     })
     return () => {
       live = false
     }
+  }, [])
+
+  /** After signing in, hand over whatever was played before signing in. */
+  const arrived = useCallback((p: Player) => {
+    setPlayer(p)
+    void sync()
   }, [])
 
   const signOut = useCallback(async () => {
@@ -86,7 +96,7 @@ export function useAccount() {
     setPlayer(null)
   }, [])
 
-  return { player, ready, setPlayer, signOut }
+  return { player, ready, setPlayer: arrived, signOut }
 }
 
 /**
