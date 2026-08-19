@@ -95,10 +95,27 @@ export function overTime(rounds: Played[], most = 24) {
     }))
 }
 
+/**
+ * Which rounds are being counted. Easy and classic must not be averaged
+ * together: on easy you choose one of four, so guessing alone scores about
+ * 25%, while on the whole map it scores about one in seventy. A single
+ * accuracy figure over both says nothing about either.
+ */
+export type Mode = 'all' | 'easy' | 'classic'
+
+const inMode = (r: Played, mode: Mode) =>
+  mode === 'all' || (mode === 'easy' ? r.easy : !r.easy)
+
 /** Everything the progress page shows, from what this browser has kept. */
-export function progress(app?: string) {
-  const rounds = history().filter((r) => (app ? r.app === app : true) && r.answers.length > 0)
+export function progress(app?: string, mode: Mode = 'all') {
+  const played = history().filter((r) => (app ? r.app === app : true) && r.answers.length > 0)
+  const rounds = played.filter((r) => inMode(r, mode))
   return {
+    /** What is on offer, so the page can hide a filter with nothing to filter. */
+    modes: {
+      easy: played.filter((r) => r.easy).reduce((n, r) => n + r.answers.length, 0),
+      classic: played.filter((r) => !r.easy).reduce((n, r) => n + r.answers.length, 0),
+    },
     rounds,
     all: tally(rounds),
     topics: byTopic(rounds),

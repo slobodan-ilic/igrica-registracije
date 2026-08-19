@@ -340,6 +340,9 @@ if (!process.env.URL) {
   await p.evaluate(r=>localStorage.setItem('tablice.history',JSON.stringify(r)),rounds)
   await p.goto(`${S}/napredak`,{waitUntil:'networkidle0'}); await pause(500)
 
+  // Every round above is classic, so no filter should appear at all.
+  check('with one kind of round there is nothing to filter', (await p.$$('.filter')).length===0)
+
   const tiles=await p.$$eval('.tile',es=>es.map(e=>e.querySelector('.tile__value').textContent))
   // 3 rounds, 12 questions, 10 right = 83%. The longest run is 5 — all of r2 —
   // because a streak lives inside one round, which is what the game shows you
@@ -357,6 +360,41 @@ if (!process.env.URL) {
 
   const bars=await p.$$eval('.rank__fill',es=>es.map(e=>e.style.width))
   check('the bars are drawn to the numbers', bars[0]==='90%', bars.join(' '))
+  await ctx.close()
+}
+
+// easy and classic must never be averaged together: on easy you pick one of
+// four, so guessing alone scores about 25%
+{
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:1200,height:1400})
+  const rounds=[
+    {id:'c1',app:'tablice',topic:'srbija',seed:'a',length:2,easy:false,kim:false,score:1,ms:2000,at:1,
+     answers:[{code:'NS',picked:'NS',correct:true,ms:1000},{code:'BG',picked:'NI',correct:false,ms:1000}]},
+    {id:'e1',app:'tablice',topic:'srbija',seed:'b',length:2,easy:true,kim:false,score:2,ms:2000,at:2,
+     answers:[{code:'NS',picked:'NS',correct:true,ms:1000},{code:'BG',picked:'BG',correct:true,ms:1000}]},
+    {id:'e2',app:'tablice',topic:'srbija',seed:'c',length:2,easy:true,kim:false,score:2,ms:2000,at:3,
+     answers:[{code:'SU',picked:'SU',correct:true,ms:1000},{code:'PA',picked:'PA',correct:true,ms:1000}]}]
+  await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'})
+  await p.evaluate(r=>localStorage.setItem('tablice.history',JSON.stringify(r)),rounds)
+  await p.goto(`${S}/napredak`,{waitUntil:'networkidle0'}); await pause(500)
+
+  const picks=await p.$$eval('.filter__pick',es=>es.map(e=>
+    e.textContent+(e.className.includes('--on')?'*':'')))
+  check('both kinds played, so the filter appears', picks.length===3, picks.join(' '))
+  // 4 easy answers against 2 classic, so easy is the one it opens on
+  check('it opens on whichever was played more', picks[1]==='Lako*', picks.join(' '))
+
+  const acc=()=>p.$$eval('.tile',es=>es[2].querySelector('.tile__value').textContent)
+  check('easy is counted on its own', await acc()==='100%', await acc())
+
+  await p.click('.filter__pick:nth-child(1)'); await pause(250)
+  check('classic is counted on its own', await acc()==='50%', await acc())
+
+  await p.click('.filter__pick:nth-child(3)'); await pause(250)
+  check('and the two can be seen together, said so in words',
+    await acc()==='83%' && /ne porede/.test(await p.$eval('.napredak__scope',e=>e.textContent)),
+    await acc())
   await ctx.close()
 }
 

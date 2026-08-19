@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { BackLink } from './Chrome'
 import { href, linkProps } from './router'
 import { appName } from './prefs'
-import { progress } from './stats'
+import { progress, type Mode } from './stats'
 import { plural } from './sr'
 import type { Player } from './account'
 import type { Topic } from './topic'
@@ -134,6 +134,35 @@ function Tile({ value, label }: { value: string; label: string }) {
   )
 }
 
+/**
+ * Which set of rounds is being counted. Shown only when both kinds have been
+ * played, since otherwise there is nothing to choose between — and it opens on
+ * whichever was played more, so the first accuracy anyone reads is one that
+ * means something rather than an average across two different games.
+ */
+function Filter({ mode, onMode, counts }: {
+  mode: Mode
+  onMode: (m: Mode) => void
+  counts: { easy: number; classic: number }
+}) {
+  if (!counts.easy || !counts.classic) return null
+  const of: [Mode, string][] = [['classic', 'Klasično'], ['easy', 'Lako'], ['all', 'Sve']]
+  return (
+    <div className="filter" role="group" aria-label="Koje partije">
+      {of.map(([m, text]) => (
+        <button
+          key={m}
+          type="button"
+          className={`filter__pick${mode === m ? ' filter__pick--on' : ''}`}
+          onClick={() => onMode(m)}
+        >
+          {text}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function Progress({
   topics,
   player,
@@ -143,10 +172,12 @@ export function Progress({
   player: Player | null
   accounts: boolean
 }) {
-  const p = useMemo(() => progress(appName()), [])
+  const counts = useMemo(() => progress(appName()).modes, [])
+  const [mode, setMode] = useState<Mode>(counts.easy > counts.classic ? 'easy' : 'classic')
+  const p = useMemo(() => progress(appName(), mode), [mode])
   const label = (id: string) => topics[id]?.label ?? id
 
-  if (!p.rounds.length) {
+  if (!counts.easy && !counts.classic) {
     return (
       <div className="intro intro--menu">
         <BackLink to={href.home()} label="Nazad" />
@@ -166,6 +197,7 @@ export function Progress({
     <div className="intro intro--menu napredak">
       <BackLink to={href.home()} label="Nazad" />
       <h1 className="intro__title">Vaš napredak</h1>
+      <Filter mode={mode} onMode={setMode} counts={counts} />
 
       <div className="tiles">
         <Tile value={`${p.all.rounds}`} label={plural(p.all.rounds, 'partija', 'partije', 'partija')} />
@@ -173,6 +205,14 @@ export function Progress({
         <Tile value={`${p.all.accuracy}%`} label="tačnost" />
         <Tile value={`${p.all.streak}`} label="najduži niz" />
       </div>
+
+      <p className="napredak__scope">
+        {mode === 'all'
+          ? 'Sve partije zajedno — lako i klasično se ne porede.'
+          : mode === 'easy'
+            ? 'Samo partije na lako, gde birate između četiri područja.'
+            : 'Samo klasične partije, na celoj mapi.'}
+      </p>
 
       {p.line.length > 1 && <OverTime data={p.line} label={label} />}
       {p.topics.length > 0 && <ByCountry rows={p.topics} label={label} />}

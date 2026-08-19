@@ -210,3 +210,42 @@
   color: var(--muted);
   font-size: 13px;
 }
+
+/* ---------- which rounds are counted ---------- */
+
+.filter {
+  display: inline-flex;
+  gap: 3px;
+  margin: 18px 0 0;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+}
+
+.filter__pick {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter__pick:hover { color: var(--text); }
+
+.filter__pick--on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Names the set the numbers belong to, so the page is never read as one
+   figure covering two different games. */
+.napredak__scope {
+  margin: 14px 0 22px;
+  color: var(--muted);
+  font-size: 13px;
+}
