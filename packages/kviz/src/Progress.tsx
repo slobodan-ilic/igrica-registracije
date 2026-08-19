@@ -1,0 +1,209 @@
+import { useMemo, useState } from 'react'
+import { BackLink } from './Chrome'
+import { href, linkProps } from './router'
+import { appName } from './prefs'
+import { progress } from './stats'
+import { plural } from './sr'
+import type { Player } from './account'
+import type { Topic } from './topic'
+import './Progress.css'
+
+/**
+ * What the rounds you have played add up to.
+ *
+ * Every chart here is one series, so each is a single hue rather than a set of
+ * them — nothing on this page asks you to tell two colours apart, which is the
+ * cheapest way to be safe for the six percent of men who could not. Identity is
+ * carried by the labels, which are always drawn.
+ */
+
+const W = 720
+const H = 190
+const PAD = { top: 14, right: 12, bottom: 26, left: 34 }
+
+type Point = { at: number; topic: string; accuracy: number; questions: number }
+
+/** Accuracy round by round. One series, so no legend — the heading names it. */
+function OverTime({ data, label }: { data: Point[]; label: (id: string) => string }) {
+  const [at, setAt] = useState<number | null>(null)
+  const plotW = W - PAD.left - PAD.right
+  const plotH = H - PAD.top - PAD.bottom
+
+  const x = (i: number) => PAD.left + (data.length < 2 ? plotW / 2 : (i / (data.length - 1)) * plotW)
+  const y = (v: number) => PAD.top + plotH - (v / 100) * plotH
+
+  const line = data.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(d.accuracy).toFixed(1)}`).join(' ')
+  const area = `${line} L${x(data.length - 1).toFixed(1)} ${PAD.top + plotH} L${x(0).toFixed(1)} ${PAD.top + plotH} Z`
+  const shown = at === null ? null : data[at]
+
+  return (
+    <figure className="chart">
+      <figcaption className="chart__title">Tačnost kroz vreme</figcaption>
+      <div className="chart__plot">
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Tačnost po partiji">
+          {[0, 50, 100].map((v) => (
+            <g key={v}>
+              <line className="chart__grid" x1={PAD.left} x2={W - PAD.right} y1={y(v)} y2={y(v)} />
+              <text className="chart__tick" x={PAD.left - 8} y={y(v)} dy="0.32em">{v}%</text>
+            </g>
+          ))}
+
+          <path className="chart__area" d={area} />
+          <path className="chart__line" d={line} />
+
+          {shown && <line className="chart__cross" x1={x(at!)} x2={x(at!)} y1={PAD.top} y2={PAD.top + plotH} />}
+          {data.map((d, i) => (
+            <circle
+              key={i}
+              className={`chart__dot${at === i ? ' chart__dot--on' : ''}`}
+              cx={x(i)}
+              cy={y(d.accuracy)}
+              r={at === i ? 5 : 3}
+            />
+          ))}
+
+          {/* Hit areas wider than the marks, so a point is easy to reach. */}
+          {data.map((_, i) => (
+            <rect
+              key={`hit-${i}`}
+              className="chart__hit"
+              x={x(i) - plotW / Math.max(data.length, 2) / 2}
+              y={PAD.top}
+              width={plotW / Math.max(data.length, 2)}
+              height={plotH}
+              onMouseEnter={() => setAt(i)}
+              onMouseLeave={() => setAt(null)}
+            />
+          ))}
+        </svg>
+
+        {shown && (
+          <div className="chart__tip" style={{ left: `${(x(at!) / W) * 100}%` }}>
+            <b>{shown.accuracy}%</b>
+            <span>
+              {label(shown.topic)} · {shown.questions}{' '}
+              {plural(shown.questions, 'pitanje', 'pitanja', 'pitanja')}
+            </span>
+          </div>
+        )}
+      </div>
+      <p className="chart__note">
+        Poslednj{data.length === 1 ? 'a partija' : `ih ${data.length} partija`}
+      </p>
+    </figure>
+  )
+}
+
+/** Accuracy per country: magnitude across a handful of names, so ranks. */
+function ByCountry({
+  rows,
+  label,
+}: {
+  rows: { topic: string; accuracy: number; questions: number }[]
+  label: (id: string) => string
+}) {
+  return (
+    <figure className="chart">
+      <figcaption className="chart__title">Po zemljama</figcaption>
+      <ul className="ranks">
+        {rows.map((r) => (
+          <li key={r.topic} className="rank">
+            <span className="rank__name">{label(r.topic)}</span>
+            <span className="rank__track">
+              <span className="rank__fill" style={{ width: `${Math.max(r.accuracy, 1.5)}%` }} />
+            </span>
+            <span className="rank__value">
+              {r.accuracy}%
+              <em>
+                {r.questions} {plural(r.questions, 'pitanje', 'pitanja', 'pitanja')}
+              </em>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </figure>
+  )
+}
+
+function Tile({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="tile">
+      <b className="tile__value">{value}</b>
+      <span className="tile__label">{label}</span>
+    </div>
+  )
+}
+
+export function Progress({
+  topics,
+  player,
+  accounts,
+}: {
+  topics: Record<string, Topic>
+  player: Player | null
+  accounts: boolean
+}) {
+  const p = useMemo(() => progress(appName()), [])
+  const label = (id: string) => topics[id]?.label ?? id
+
+  if (!p.rounds.length) {
+    return (
+      <div className="intro intro--menu">
+        <BackLink to={href.home()} label="Nazad" />
+        <h1 className="intro__title">Vaš napredak</h1>
+        <p className="intro__lead">
+          Ovde se skuplja sve što odigrate — tačnost, najduži niz i oznake koje vas najviše
+          muče. Odigrajte jednu partiju pa se vratite.
+        </p>
+        <div className="intro__actions">
+          <a className="btn" {...linkProps(href.home())}>Igraj</a>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="intro intro--menu napredak">
+      <BackLink to={href.home()} label="Nazad" />
+      <h1 className="intro__title">Vaš napredak</h1>
+
+      <div className="tiles">
+        <Tile value={`${p.all.rounds}`} label={plural(p.all.rounds, 'partija', 'partije', 'partija')} />
+        <Tile value={`${p.all.questions}`} label={plural(p.all.questions, 'pitanje', 'pitanja', 'pitanja')} />
+        <Tile value={`${p.all.accuracy}%`} label="tačnost" />
+        <Tile value={`${p.all.streak}`} label="najduži niz" />
+      </div>
+
+      {p.line.length > 1 && <OverTime data={p.line} label={label} />}
+      {p.topics.length > 0 && <ByCountry rows={p.topics} label={label} />}
+
+      {p.confused.length > 0 && (
+        <section className="chart">
+          <h2 className="chart__title">Najčešće greške</h2>
+          <p className="chart__note chart__note--lead">
+            Oznake koje ste više puta stavili na pogrešno mesto.
+          </p>
+          <ul className="mistakes">
+            {p.confused.slice(0, 8).map((c) => (
+              <li key={`${c.code}>${c.picked}`} className="mistake">
+                <b className="mistake__code">{c.code}</b>
+                <span className="mistake__arrow" aria-hidden="true">→</span>
+                <span className="mistake__picked">{c.picked}</span>
+                <span className="mistake__times">
+                  {c.times} {plural(c.times, 'put', 'puta', 'puta')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {accounts && !player && (
+        <p className="napredak__nudge">
+          Ovo se čuva samo u ovom pregledaču. Prijavite se gore desno i napredak vas prati i na
+          telefonu.
+        </p>
+      )}
+    </div>
+  )
+}

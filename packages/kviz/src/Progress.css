@@ -1,0 +1,212 @@
+/* The progress page: four numbers, two charts and a list of mistakes.
+
+   Named "napredak" rather than "progress" because the game already owns
+   .progress — the thin bar that fills as a round goes on. This page wearing
+   that name inherited its clipped 32px track and hid itself.
+
+   Every chart is one series, so every chart is one hue — the accent. Nothing
+   here asks anyone to tell two colours apart, and the labels are always drawn,
+   so hue is never the only thing carrying meaning. */
+
+/* Beats .intro's centring, which is right for a menu and wrong for a page of
+   numbers: figures and labels read down a left edge. */
+.intro.napredak { text-align: left; }
+
+/* ---------- the four numbers ---------- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0 30px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.tile { text-align: left; }
+
+.tile__value {
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.tile__label { color: var(--muted); font-size: 12.5px; }
+
+@media (max-width: 620px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- charts ---------- */
+
+.chart {
+  margin: 0 0 30px;
+  padding: 16px 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+/* Left, with the data underneath it. */
+.chart__title {
+  margin: 0 0 12px;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.chart__note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chart__note--lead { margin: -6px 0 12px; }
+
+.chart__plot { position: relative; }
+.chart__plot svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* Recessive: the data is the thing being read, not the frame around it. */
+.chart__grid { stroke: var(--line); stroke-width: 1; }
+.chart__tick { fill: var(--muted); font-size: 10px; text-anchor: end; }
+
+.chart__line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart__area { fill: var(--accent); opacity: 0.09; stroke: none; }
+
+.chart__dot {
+  fill: var(--accent);
+  /* A ring of the surface, so points that land on the line still read as points. */
+  stroke: var(--card);
+  stroke-width: 2;
+}
+
+.chart__dot--on { fill: var(--accent); }
+.chart__cross { stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart__hit { fill: transparent; cursor: crosshair; }
+
+.chart__tip {
+  position: absolute;
+  top: -6px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  border-radius: 9px;
+  background: var(--tip-bg);
+  color: var(--tip-ink);
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.chart__tip b { font-size: 14px; }
+.chart__tip span { color: var(--tip-muted); }
+
+/* ---------- ranks ---------- */
+
+.ranks { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; }
+
+.rank {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr) 5.5rem;
+  align-items: center;
+  gap: 12px;
+}
+
+.rank__name { font-size: 13.5px; font-weight: 600; }
+
+.rank__track {
+  /* A span is inline, and height does nothing to an inline box. */
+  display: block;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--region-off);
+}
+
+.rank__fill {
+  display: block;
+  height: 100%;
+  /* Rounded at the far end only: the bar grows from the baseline, and a rounded
+     start would leave it floating away from it. */
+  border-radius: 0 4px 4px 0;
+  background: var(--accent);
+}
+
+.rank__value {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.rank__value em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@media (max-width: 620px) {
+  .rank { grid-template-columns: 6.5rem minmax(0, 1fr) 4.5rem; gap: 8px; }
+  .rank__name { font-size: 12.5px; }
+}
+
+/* ---------- mistakes ---------- */
+
+.mistakes { display: flex; flex-direction: column; gap: 7px; margin: 0; padding: 0; list-style: none; }
+
+.mistake {
+  display: grid;
+  grid-template-columns: 3.2rem 1rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--bad-soft);
+}
+
+.mistake__code {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.mistake__arrow { color: var(--muted); }
+.mistake__picked { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mistake__times {
+  color: var(--bad-ink);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- the nudge ---------- */
+
+.napredak__nudge {
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}

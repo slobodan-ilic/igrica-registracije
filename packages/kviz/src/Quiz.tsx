@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { geoCentroid } from 'd3-geo'
+import { Progress } from './Progress'
 import { Setup } from './Setup'
 import { Game } from './Game'
 import { Corner } from './Chrome'
-import { useAccount } from './account'
+import { accountsOffered, useAccount } from './account'
 import { indexByCode, playableCodes, randomSeed } from './deck'
 import { applyTheme, systemTheme, THEMES, usePref, type Theme } from './prefs'
 import { canonical, href, navigate, useRoute, type Round } from './router'
@@ -55,12 +56,12 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
     [],
   )
 
-  const topicId = route.name === 'home' ? null : route.topic
+  const topicId = route.name === 'home' || route.name === 'progress' ? null : route.topic
   const topic = topicId && topicId in topics ? topics[topicId] : null
 
   // An unknown topic in the URL is a dead end; send it home.
   useEffect(() => {
-    if (route.name !== 'home' && !topic) navigate(href.home(), true)
+    if (route.name !== 'home' && route.name !== 'progress' && !topic) navigate(href.home(), true)
   }, [route, topic])
 
   useEffect(() => {
@@ -130,6 +131,15 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
   const corner = (
     <Corner theme={theme} onTheme={setTheme} account={account} />
   )
+
+  if (route.name === 'progress') {
+    return (
+      <main className="shell shell--scroll">
+        {corner}
+        <Progress topics={topics} player={account.player} accounts={accountsOffered()} />
+      </main>
+    )
+  }
 
   if (!topic) {
     return (

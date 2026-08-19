@@ -311,5 +311,54 @@ if (!process.env.URL) {
   await ctx.close()
 }
 
+// the progress page: the sums it shows must be the sums of what was played
+{
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:1200,height:1400})
+
+  await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'})
+  await p.evaluate(()=>localStorage.removeItem('tablice.history'))
+  await p.goto(`${S}/napredak`,{waitUntil:'networkidle0'}); await pause(400)
+  check('with nothing played it invites you to play',
+    (await p.$$('.tile')).length===0 && /Odigrajte/.test(await p.$eval('.intro__lead',e=>e.textContent)))
+
+  // 3 rounds: srbija 4/5 then 5/5, hrvatska 1/2. KŠ mistaken for Kraljevo twice.
+  const rounds=[
+    {id:'r1',app:'tablice',topic:'srbija',seed:'a',length:5,easy:false,kim:false,score:4,ms:5000,at:1,
+     answers:[{code:'NS',picked:'NS',correct:true,ms:1000},{code:'BG',picked:'BG',correct:true,ms:1000},
+              {code:'KŠ',picked:'Kraljevo',correct:false,ms:1000},{code:'NI',picked:'NI',correct:true,ms:1000},
+              {code:'SU',picked:'SU',correct:true,ms:1000}]},
+    {id:'r2',app:'tablice',topic:'srbija',seed:'b',length:5,easy:false,kim:false,score:5,ms:5000,at:2,
+     answers:[{code:'NS',picked:'NS',correct:true,ms:1000},{code:'BG',picked:'BG',correct:true,ms:1000},
+              {code:'PA',picked:'PA',correct:true,ms:1000},{code:'NI',picked:'NI',correct:true,ms:1000},
+              {code:'SU',picked:'SU',correct:true,ms:1000}]},
+    {id:'r3',app:'tablice',topic:'hrvatska',seed:'c',length:2,easy:false,kim:false,score:1,ms:2000,at:3,
+     answers:[{code:'ZG',picked:'ZG',correct:true,ms:1000},{code:'KŠ',picked:'Kraljevo',correct:false,ms:1000}]},
+    // another app's rounds must not leak into this one's page
+    {id:'r4',app:'geografija',topic:'okruzi',seed:'d',length:1,easy:false,kim:false,score:0,ms:500,at:4,
+     answers:[{code:'X',picked:'Y',correct:false,ms:500}]}]
+  await p.evaluate(r=>localStorage.setItem('tablice.history',JSON.stringify(r)),rounds)
+  await p.goto(`${S}/napredak`,{waitUntil:'networkidle0'}); await pause(500)
+
+  const tiles=await p.$$eval('.tile',es=>es.map(e=>e.querySelector('.tile__value').textContent))
+  // 3 rounds, 12 questions, 10 right = 83%. The longest run is 5 — all of r2 —
+  // because a streak lives inside one round, which is what the game shows you
+  // while you play it. It does not carry over a gap of hours.
+  check('the four numbers are the sums of the rounds',
+    JSON.stringify(tiles)===JSON.stringify(['3','12','83%','5']), tiles.join(' · '))
+
+  const ranks=await p.$$eval('.rank',es=>es.map(e=>
+    e.querySelector('.rank__name').textContent+' '+e.querySelector('.rank__value').textContent.replace(/\s+/g,' ')))
+  check('each country is counted on its own', ranks.length===2 && /^Srbija 90%/.test(ranks[0]), ranks.join(' | '))
+
+  const mistakes=await p.$$eval('.mistake',es=>es.map(e=>e.textContent.replace(/\s+/g,' ').trim()))
+  check('a repeated mistake is named, a one-off is not',
+    mistakes.length===1 && /KŠ.*Kraljevo.*2 puta/.test(mistakes[0]), mistakes.join(' | '))
+
+  const bars=await p.$$eval('.rank__fill',es=>es.map(e=>e.style.width))
+  check('the bars are drawn to the numbers', bars[0]==='90%', bars.join(' '))
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await b.close()

@@ -378,3 +378,17 @@
   .siblings { margin-top: 26px; }
   .sibling__preview .plate { --plate-h: 36px; }
 }
+
+/* The way through to the progress page, under the start buttons. */
+.intro__aside {
+  margin: 16px 0 0;
+  font-size: 13.5px;
+}
+
+.intro__aside a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.intro__aside a:hover { text-decoration: underline; }

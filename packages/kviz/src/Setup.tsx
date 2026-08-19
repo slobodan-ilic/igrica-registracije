@@ -85,6 +85,9 @@ export function Setup({
               </a>
             ))}
           </div>
+          <p className="intro__aside">
+            <a {...linkProps(href.progress())}>Pratite svoj napredak →</a>
+          </p>
         </div>
 
         <div className="menu__show">
