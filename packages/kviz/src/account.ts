@@ -144,6 +144,8 @@ export function useGoogleButton(el: HTMLDivElement | null, onSignedIn: (p: Playe
 
     return () => {
       live = false
+      // Whatever Google put in there is Google's, and React will not clear it.
+      el.replaceChildren()
     }
   }, [el])
 }

@@ -123,7 +123,11 @@ function AccountChip({
 
   if (player) {
     return (
-      <div className="account">
+      // Keyed apart from the signed-out slot below. Both branches are a div in
+      // the same place, so without this React reuses the one node and merely
+      // adds these children — leaving Google's button sitting beside them,
+      // since that button was never in React's tree for React to remove.
+      <div className="account" key="in">
         <span className="account__name" title="Prijavljeni ste">{player.name}</span>
         <button type="button" className="account__out" onClick={onSignOut}>
           Odjava
@@ -131,5 +135,5 @@ function AccountChip({
       </div>
     )
   }
-  return <div className="account account--google" ref={setSlot} />
+  return <div className="account account--google" key="out" ref={setSlot} />
 }

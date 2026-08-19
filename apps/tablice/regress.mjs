@@ -190,5 +190,43 @@ check('confirm scores', (await t.$eval('.bar__stats',e=>e.textContent)).includes
   await ctx.close()
 }
 
+// signing in swaps one thing for another in the corner, and must leave nothing
+// of the first behind. Google's script and endpoint are stubbed: what is under
+// test is our own handover, not theirs.
+if (!process.env.URL) {
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:1200,height:800})
+  await p.evaluateOnNewDocument(()=>{
+    window.google={accounts:{id:{
+      initialize:o=>{window.__signIn=()=>o.callback({credential:'stub'})},
+      renderButton:el=>{const btn=document.createElement('button')
+        btn.className='stub-gsi'; btn.textContent='Prijavi me'
+        btn.onclick=()=>window.__signIn(); el.appendChild(btn)},
+      disableAutoSelect:()=>{}}}}
+  })
+  await p.setRequestInterception(true)
+  p.on('request',r=>{
+    const u=r.url()
+    if(u.includes('gsi/client')) return r.respond({status:200,contentType:'text/javascript',body:'/*stub*/'})
+    if(u.endsWith('/api/auth/me')) return r.respond({status:200,contentType:'application/json',body:'{"player":null}'})
+    if(u.endsWith('/api/auth/google')) return r.respond({status:200,contentType:'application/json',body:'{"sub":"stub","name":"Proba"}'})
+    r.continue()
+  })
+  await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'}); await pause(600)
+
+  const before=await p.evaluate(()=>({button:!!document.querySelector('.stub-gsi'),
+    name:!!document.querySelector('.account__name')}))
+  check('signed out, the corner offers a way in', before.button && !before.name)
+
+  await p.click('.stub-gsi'); await pause(500)
+  const after=await p.evaluate(()=>{const a=document.querySelector('.corner')
+    return {name:document.querySelector('.account__name')?.textContent,
+      leftover:!!a.querySelector('.stub-gsi'), chips:a.querySelectorAll('.account').length}})
+  check('signing in leaves no sign-in button behind',
+    after.name==='Proba' && !after.leftover && after.chips===1,
+    `${after.name}, leftover ${after.leftover}, ${after.chips} chip(s)`)
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await b.close()
