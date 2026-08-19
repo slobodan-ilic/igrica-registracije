@@ -20,6 +20,8 @@ export type Played = {
   length: number
   easy: boolean
   kim: boolean
+  /** Whether every question was against a clock. */
+  timed: boolean
   score: number
   /** How long the questions took altogether, in milliseconds. */
   ms: number

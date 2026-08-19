@@ -145,3 +145,55 @@
 @media (max-width: 900px) {
   .side .plate { --plate-h: clamp(66px, 10vw, 96px); }
 }
+
+/* ---------- the clock, when a round is against one ---------- */
+
+/* A bar that drains, with the seconds beside it. The number is there because a
+   bar alone says "some time left" and never "three seconds left" — and because
+   a bar that only shrinks is invisible to anyone who cannot see it shrink. */
+/* .quiz centres its children, which would shrink this to the width of the
+   number beside it — the bar needs the whole column to drain across. */
+.clock {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 -2px;
+}
+
+/* A track that holds a fill, rather than a bar that is itself the fill: given
+   flex: 1 the bar would grow to the space available and ignore the width that
+   is the whole point of it. */
+.clock__track {
+  display: block;
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--track);
+}
+
+.clock__left {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  /* Matches the hundred-millisecond tick, so it slides rather than steps. */
+  transition: width 100ms linear;
+}
+
+.clock__count {
+  width: 1.8rem;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The last few seconds are the ones worth noticing. */
+.clock--last .clock__left { background: var(--bad-line); }
+.clock--last .clock__count { color: var(--bad-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .clock__left { transition: none; }
+}

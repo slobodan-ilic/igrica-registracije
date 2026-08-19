@@ -6,7 +6,7 @@ import { hasChooser, href, linkProps, navigate, type Round } from './router'
 import { joinSr } from './deck'
 import { randomSeed } from './deck'
 import { record, sync } from './history'
-import { CHOICES, useRound } from './useRound'
+import { budget, CHOICES, useRound } from './useRound'
 import type { Theme } from './prefs'
 import type { Topic, TopicData } from './topic'
 import type { RegionProps } from './types'
@@ -25,10 +25,19 @@ type Props = {
   onTheme: (t: Theme) => void
 }
 
+/** 3:07, or 47s when it never reaches a minute. */
+function clock(ms: number) {
+  const total = Math.round(ms / 1000)
+  const min = Math.floor(total / 60)
+  return min ? `${min}:${String(total % 60).padStart(2, '0')}` : `${total}s`
+}
+
 export function Game(props: Props) {
   const { topic, data, codes, byCode, centroids, playable, touch, theme, onTheme } = props
-  const { length, easy, seed } = props.round
-  const round = useRound({ codes, byCode, centroids, length, easy, seed })
+  const { length, easy, seed, timed } = props.round
+  // Against however many places are actually live, which is four on easy.
+  const seconds = timed ? budget(easy ? CHOICES : codes.length) : 0
+  const round = useRound({ codes, byCode, centroids, length, easy, seed, seconds })
 
   // A fresh seed is a fresh round, and the URL says so — no remount trickery.
   const again = () => navigate(href.game(topic.id, { ...props.round, seed: randomSeed() }))
@@ -46,13 +55,14 @@ export function Game(props: Props) {
       length,
       easy,
       kim: props.round.kim,
+      timed,
       score: round.score,
       ms: round.answers.reduce((t, a) => t + a.ms, 0),
       answers: round.answers,
     })
     // Signed out this is refused and quietly does nothing, which is the point.
     void sync()
-  }, [round.done, round.answers, round.score, topic.id, seed, length, easy, props.round.kim])
+  }, [round.done, round.answers, round.score, topic.id, seed, length, easy, timed, props.round.kim])
 
   const describe = useCallback(
     (regionCode: string, isAnswered: boolean) => {
@@ -82,7 +92,17 @@ export function Game(props: Props) {
         <h1 className="intro__title">
           {round.score} / {round.deck.length} <span className="intro__accent">· {pct}%</span>
         </h1>
-        <p className="intro__lead">Najduži niz: {round.best}</p>
+        <p className="intro__lead">
+          Najduži niz: {round.best}
+          {round.spent > 0 && (
+            <>
+              {' · '}
+              {clock(round.spent)}
+              {' · '}
+              {(round.spent / 1000 / round.deck.length).toFixed(1)}s po pitanju
+            </>
+          )}
+        </p>
 
         <ContactSheet
           topic={topic.id}
@@ -142,12 +162,35 @@ export function Game(props: Props) {
 
         <div className="quiz">
           {round.target && topic.prompt(round.target)}
+
+          {round.seconds > 0 && (
+            <div
+              className={`clock${round.left <= 3 ? ' clock--last' : ''}`}
+              data-seconds={round.seconds}
+              role="timer"
+              aria-label={`Preostalo ${Math.ceil(round.left)} sekundi`}
+            >
+              <span className="clock__track">
+                <span
+                  className="clock__left"
+                  style={{ width: `${(round.left / round.seconds) * 100}%` }}
+                />
+              </span>
+              <b className="clock__count">{Math.ceil(round.left)}</b>
+            </div>
+          )}
           <div className="verdict" aria-live="polite">
             {!round.answer && <span className="verdict__ask">{ask}</span>}
             {round.answer?.correct && (
               <span className="verdict__ok">Tačno — {round.target?.name}</span>
             )}
-            {round.answer && !round.answer.correct && (
+            {round.answer && !round.answer.correct && !round.answer.picked && (
+              <span className="verdict__bad">
+                <span>Isteklo vreme — </span>
+                {round.target && topic.reveal(round.target)}
+              </span>
+            )}
+            {round.answer && !round.answer.correct && round.answer.picked && (
               <span className="verdict__bad">
                 {round.target && topic.reveal(round.target)}
                 {round.target?.covers.length ? (

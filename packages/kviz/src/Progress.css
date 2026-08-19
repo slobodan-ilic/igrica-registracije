@@ -16,7 +16,7 @@
 
 .tiles {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   margin: 22px 0 30px;
 }
@@ -41,6 +41,10 @@
 }
 
 .tile__label { color: var(--muted); font-size: 12.5px; }
+
+@media (max-width: 900px) {
+  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 
 @media (max-width: 620px) {
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }

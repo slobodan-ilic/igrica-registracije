@@ -16,6 +16,7 @@ import './styles.css'
 type Mode = 'easy' | 'classic'
 const MODES = ['easy', 'classic'] as const
 const KIM = ['on', 'off'] as const
+const TIMED = ['on', 'off'] as const
 
 export type QuizProps = {
   /** Every quiz this app offers, by id. */
@@ -48,6 +49,7 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
   useEffect(() => applyTheme(theme), [theme])
   const [mode, setMode] = usePref<Mode>('mode', MODES, () => 'classic')
   const [kim, setKim] = usePref<'on' | 'off'>('kim', KIM, () => 'off')
+  const [timed, setTimed] = usePref<'on' | 'off'>('timed', TIMED, () => 'off')
 
   const account = useAccount()
 
@@ -197,6 +199,8 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
           onKim={(on) => setKim(on ? 'on' : 'off')}
           kimCount={kimCount}
           choices={CHOICES}
+          timed={timed === 'on'}
+          onTimed={(on) => setTimed(on ? 'on' : 'off')}
         />
       )}
     </main>

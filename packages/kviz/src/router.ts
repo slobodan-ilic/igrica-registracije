@@ -32,6 +32,8 @@ export type Round = {
   seed: string
   easy: boolean
   kim: boolean
+  /** Whether each question is against a clock. */
+  timed: boolean
 }
 
 export type Route =
@@ -67,6 +69,7 @@ const round = (search: string): Round => {
     seed: q.get('s') ?? '',
     easy: q.get('m') === 'lako',
     kim: q.get('k') === '1',
+    timed: q.get('t') === '1',
   }
 }
 
@@ -89,8 +92,8 @@ export function parseRoute(pathname: string, search: string): Route {
   return { name: 'setup', topic }
 }
 
-const query = ({ length, seed, easy, kim }: Round) =>
-  [`n=${length}`, seed && `s=${seed}`, easy && 'm=lako', kim && 'k=1']
+const query = ({ length, seed, easy, kim, timed }: Round) =>
+  [`n=${length}`, seed && `s=${seed}`, easy && 'm=lako', kim && 'k=1', timed && 't=1']
     .filter(Boolean)
     .join('&')
 

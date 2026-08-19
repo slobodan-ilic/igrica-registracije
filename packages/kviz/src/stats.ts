@@ -72,7 +72,9 @@ export function confusions(rounds: Played[], least = 2): Confusion[] {
   const seen = new Map<string, Confusion>()
   for (const r of rounds) {
     for (const a of r.answers) {
-      if (a.correct) continue
+      // Nothing picked means the clock ran out, which is not a place someone
+      // confused with somewhere else.
+      if (a.correct || !a.picked) continue
       const key = `${a.code}>${a.picked}`
       const at = seen.get(key)
       if (at) at.times++

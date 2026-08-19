@@ -347,8 +347,9 @@ if (!process.env.URL) {
   // 3 rounds, 12 questions, 10 right = 83%. The longest run is 5 — all of r2 —
   // because a streak lives inside one round, which is what the game shows you
   // while you play it. It does not carry over a gap of hours.
-  check('the four numbers are the sums of the rounds',
-    JSON.stringify(tiles)===JSON.stringify(['3','12','83%','5']), tiles.join(' · '))
+  // Five now: the median second-per-question joined them.
+  check('the numbers are the sums of the rounds',
+    JSON.stringify(tiles)===JSON.stringify(['3','12','83%','5','1s']), tiles.join(' · '))
 
   const ranks=await p.$$eval('.rank',es=>es.map(e=>
     e.querySelector('.rank__name').textContent+' '+e.querySelector('.rank__value').textContent.replace(/\s+/g,' ')))
@@ -395,6 +396,49 @@ if (!process.env.URL) {
   check('and the two can be seen together, said so in words',
     await acc()==='83%' && /ne porede/.test(await p.$eval('.napredak__scope',e=>e.textContent)),
     await acc())
+  await ctx.close()
+}
+
+// the clock: scaled to how much map is being searched, and running out is not
+// the same as answering wrongly
+if (!process.env.URL) {
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:1440,height:900})
+
+  // Montenegro's 25 municipalities -> 4 + 3.2*log2(25) = 19s
+  await p.goto(`${S}/crnagora/igra?n=2&s=sat&t=1`,{waitUntil:'networkidle0'}); await pause(400)
+  // The budget itself, not what is left of it: the clock starts before the
+  // page has finished settling, so reading the countdown measures the load.
+  const seconds=Number(await p.$eval('.clock',e=>e.dataset.seconds))
+  check('the clock is scaled to the size of the map', seconds===19, `${seconds}s for 25 places`)
+
+  const before=Number(await p.$eval('.clock__count',e=>e.textContent))
+  await pause(2500)
+  const later=Number(await p.$eval('.clock__count',e=>e.textContent))
+  check('it runs down', later<before, `${before} -> ${later}`)
+
+  const bar=await p.$eval('.clock__left',e=>e.getBoundingClientRect().width)
+  const track=await p.$eval('.clock__track',e=>e.getBoundingClientRect().width)
+  check('and the bar drains with it', bar>0 && bar<track, `${Math.round(bar)} of ${Math.round(track)}px`)
+
+  // let this one expire
+  await pause(later*1000+500)
+  const verdict=await p.$eval('.verdict__bad',e=>e.textContent)
+  check('running out ends the question', /Isteklo vreme/.test(verdict), verdict.slice(0,30))
+
+  // an unanswered question is not somewhere you confused it with
+  await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'})
+  const kept=await p.evaluate(()=>JSON.parse(localStorage.getItem('tablice.history')||'[]'))
+  await p.evaluate(()=>localStorage.setItem('tablice.history',JSON.stringify([
+    {id:'t1',app:'tablice',topic:'srbija',seed:'a',length:2,easy:false,kim:false,timed:true,
+     score:0,ms:2000,at:1,answers:[
+       {code:'NS',picked:'',correct:false,ms:1000},{code:'NS',picked:'',correct:false,ms:1000}]}])))
+  await p.goto(`${S}/napredak`,{waitUntil:'networkidle0'}); await pause(400)
+  check('a question that ran out is not counted as a confusion',
+    (await p.$$('.mistake')).length===0, `${(await p.$$('.mistake')).length} listed`)
+  check('but it is still counted as a question',
+    (await p.$$eval('.tile',es=>es[1].querySelector('.tile__value').textContent))==='2')
+  void kept
   await ctx.close()
 }
 

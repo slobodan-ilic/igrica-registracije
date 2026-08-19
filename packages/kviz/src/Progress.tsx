@@ -204,6 +204,7 @@ export function Progress({
         <Tile value={`${p.all.questions}`} label={plural(p.all.questions, 'pitanje', 'pitanja', 'pitanja')} />
         <Tile value={`${p.all.accuracy}%`} label="tačnost" />
         <Tile value={`${p.all.streak}`} label="najduži niz" />
+        <Tile value={`${p.all.pace}s`} label="po pitanju" />
       </div>
 
       <p className="napredak__scope">

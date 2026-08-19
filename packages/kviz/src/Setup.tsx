@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { BackLink } from './Chrome'
 import { hasChooser, href, linkProps } from './router'
 import { randomSeed } from './deck'
+import { budget, CHOICES } from './useRound'
 import { plural } from './sr'
 import type { Topic } from './topic'
 import type { RegionProps } from './types'
@@ -14,6 +15,8 @@ type Props = {
   siblingsLabel?: string
   hero: RegionProps
   codes: string[]
+  timed: boolean
+  onTimed: (on: boolean) => void
   mode: 'easy' | 'classic'
   onMode: (m: 'easy' | 'classic') => void
   withKim: boolean
@@ -25,7 +28,9 @@ type Props = {
 /** One topic's own page: how you want to play it, then start. */
 export function Setup({
   topic, siblings, siblingsLabel, hero, codes, mode, onMode, withKim, onKim, kimCount, choices,
+  timed, onTimed,
 }: Props) {
+  const seconds = budget(mode === 'easy' ? CHOICES : codes.length)
   const rounds = [10, 25, codes.length].filter(
     (n, i, a) => a.indexOf(n) === i && n <= codes.length,
   )
@@ -76,7 +81,9 @@ export function Setup({
                 key={n}
                 className="btn"
                 {...linkProps(
-                  href.game(topic.id, { length: n, seed, easy: mode === 'easy', kim: withKim }),
+                  href.game(topic.id, {
+                    length: n, seed, easy: mode === 'easy', kim: withKim, timed,
+                  }),
                 )}
               >
                 {n === codes.length
@@ -92,6 +99,17 @@ export function Setup({
 
         <div className="menu__show">
           <div className="intro__hero">{topic.prompt(hero)}</div>
+
+          <label className="switch">
+            <input type="checkbox" checked={timed} onChange={(e) => onTimed(e.target.checked)} />
+            <span className="switch__track" aria-hidden="true" />
+            <span className="switch__text">
+              Na vreme
+              <em>
+                {seconds} sekundi po pitanju · {mode === 'easy' ? 'među četiri ponuđena' : 'na celoj mapi'}
+              </em>
+            </span>
+          </label>
 
           {topic.offersKim && (
             <label className="switch">
