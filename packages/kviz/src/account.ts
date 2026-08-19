@@ -99,7 +99,11 @@ export function useAccount() {
  * the first pass — and a ref object is the same object forever, so an effect
  * watching one would never hear that the element had arrived.
  */
-export function useGoogleButton(el: HTMLDivElement | null, onSignedIn: (p: Player) => void) {
+export function useGoogleButton(
+  el: HTMLDivElement | null,
+  onSignedIn: (p: Player) => void,
+  theme: 'light' | 'dark',
+) {
   const latest = useRef(onSignedIn)
   latest.current = onSignedIn
 
@@ -124,14 +128,9 @@ export function useGoogleButton(el: HTMLDivElement | null, onSignedIn: (p: Playe
           },
         })
         el.replaceChildren()
-        // Always the white button, in both themes. Google renders it into an
-        // iframe with an opaque white backdrop on a real origin — transparent
-        // on localhost, which is how it hides until you deploy — and nothing
-        // outside that frame can paint over it. A white button makes the two
-        // whites one shape; the slot clips it back to a pill.
         google.accounts.id.renderButton(el, {
           type: 'standard',
-          theme: 'outline',
+          theme: theme === 'dark' ? 'filled_black' : 'outline',
           size: 'medium',
           shape: 'pill',
           text: 'signin',
@@ -147,5 +146,5 @@ export function useGoogleButton(el: HTMLDivElement | null, onSignedIn: (p: Playe
       // Whatever Google put in there is Google's, and React will not clear it.
       el.replaceChildren()
     }
-  }, [el])
+  }, [el, theme])
 }

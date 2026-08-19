@@ -185,14 +185,12 @@
   min-height: 32px;
 }
 
-/* Google renders its button into an iframe with an opaque white backdrop, and
-   nothing out here can paint inside it — so the frame is clipped to the shape
-   the button already has, and the button is the white one, which makes the
-   whole thing one pill instead of a card with a pill on it. */
+/* Google draws the button into an iframe of its own. It takes the theme's
+   own button — outlined on paper, filled black on dark — so no background
+   belongs out here; the rounding only tidies the frame's corners. */
 .account--google {
   overflow: hidden;
   border-radius: 999px;
-  background: #fff;
   line-height: 0;
 }
 

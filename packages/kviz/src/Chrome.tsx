@@ -92,6 +92,7 @@ export function Corner({
         ready={account.ready}
         onSignedIn={account.setPlayer}
         onSignOut={account.signOut}
+        theme={theme}
       />
       <ThemeToggle theme={theme} onChange={onTheme} />
     </div>
@@ -107,15 +108,17 @@ function AccountChip({
   ready,
   onSignedIn,
   onSignOut,
+  theme,
 }: {
   player: Player | null
   ready: boolean
   onSignedIn: (p: Player) => void
   onSignOut: () => void
+  theme: Theme
 }) {
   // A callback ref, so the hook hears about the element the moment it exists.
   const [slot, setSlot] = useState<HTMLDivElement | null>(null)
-  useGoogleButton(slot, onSignedIn)
+  useGoogleButton(slot, onSignedIn, theme)
 
   // Nothing at all until we know: flashing "sign in" at someone who already is
   // reads as having been logged out.
