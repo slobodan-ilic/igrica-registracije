@@ -1,11 +1,24 @@
-import { useMemo } from 'react'
-import { BackLink } from './Chrome'
+import { useMemo, useState } from 'react'
+import { BackLink, OtherApp, type Elsewhere } from './Chrome'
 import { hasChooser, href, linkProps } from './router'
 import { randomSeed } from './deck'
 import { budget, CHOICES } from './useRound'
 import { plural } from './sr'
 import type { Topic } from './topic'
 import type { RegionProps } from './types'
+
+/**
+ * One topic's own page.
+ *
+ * There is one button on it. Everything that can be chosen is remembered from
+ * last time and summed up in a line under that button, which opens the choices
+ * if anyone wants them — so the page reads as "play this" rather than as a
+ * form to fill in first. Someone arriving cold should be answering a question
+ * within a second of landing, and someone who has set the game up their way
+ * should find it that way without saying so again.
+ */
+
+export type Length = '10' | '25' | 'sve'
 
 type Props = {
   topic: Topic
@@ -15,83 +28,132 @@ type Props = {
   siblingsLabel?: string
   hero: RegionProps
   codes: string[]
-  timed: boolean
-  onTimed: (on: boolean) => void
+  length: Length
+  onLength: (n: Length) => void
   mode: 'easy' | 'classic'
   onMode: (m: 'easy' | 'classic') => void
   withKim: boolean
   onKim: (on: boolean) => void
   kimCount: number
+  timed: boolean
+  onTimed: (on: boolean) => void
   choices: number
+  /** The sibling app, named once at the foot of the page. */
+  elsewhere?: Elsewhere
 }
 
-/** One topic's own page: how you want to play it, then start. */
-export function Setup({
-  topic, siblings, siblingsLabel, hero, codes, mode, onMode, withKim, onKim, kimCount, choices,
-  timed, onTimed,
-}: Props) {
-  const seconds = budget(mode === 'easy' ? CHOICES : codes.length)
-  const rounds = [10, 25, codes.length].filter(
-    (n, i, a) => a.indexOf(n) === i && n <= codes.length,
+/** A row of two or three choices, the shape every setting here takes. */
+function Pick<T extends string>({
+  label,
+  value,
+  onChange,
+  of,
+}: {
+  label: string
+  value: T
+  onChange: (v: T) => void
+  of: [T, string][]
+}) {
+  return (
+    <div className="choice">
+      <span className="choice__label">{label}</span>
+      <div className="choice__row" role="group" aria-label={label}>
+        {of.map(([v, text]) => (
+          <button
+            key={v}
+            type="button"
+            className={`choice__pick${value === v ? ' choice__pick--on' : ''}`}
+            onClick={() => onChange(v)}
+          >
+            {text}
+          </button>
+        ))}
+      </div>
+    </div>
   )
+}
 
-  // One seed per visit to this page, so the three buttons offer one round in
-  // three lengths rather than three unrelated ones — and reloading deals anew.
+export function Setup({
+  topic, siblings, siblingsLabel, hero, codes,
+  length, onLength, mode, onMode, withKim, onKim, kimCount, timed, onTimed, choices, elsewhere,
+}: Props) {
+  const [open, setOpen] = useState(false)
+
+  const asked = length === 'sve' ? codes.length : Math.min(Number(length), codes.length)
+  const seconds = budget(mode === 'easy' ? CHOICES : codes.length)
+
+  // One seed per visit, so reloading deals a new round and the button below
+  // does not quietly hand out the same one twice.
   const seed = useMemo(() => randomSeed(), [])
+  const round = { length: asked, seed, easy: mode === 'easy', kim: withKim, timed }
+
+  /** What the button is about to start, in one line. */
+  const summary = [
+    `${asked} ${plural(asked, 'pitanje', 'pitanja', 'pitanja')}`,
+    mode === 'easy' ? `${choices} ponuđena` : 'cela mapa',
+    timed ? `${seconds}s po pitanju` : null,
+    withKim ? 'sa Kosovom' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <div className="intro intro--menu">
       {/* With one quiz this page is the front page, so there is nowhere back. */}
       {hasChooser() && <BackLink to={href.home()} label="Sve igre" />}
 
-      {/* Two columns on a wide screen: what the quiz is and how to start it on
-          the left, the plate on the right. The left column is word for word the
-          same shape in every country — Serbia's Kosovo switch belongs to the
-          plate rather than to the invitation, so it sits under it and nothing
-          below it moves. On a narrow screen the whole thing folds back into one
-          column, in the order it reads best: the question, then the plate. */}
       <div className="menu">
         <div className="menu__say">
           <p className="intro__eyebrow">{topic.blurb}</p>
           <h1 className="intro__title">{topic.title}</h1>
           <p className="intro__lead">{topic.lead(codes.length)}</p>
 
-          <div className="modes" role="group" aria-label="Težina">
-            <button
-              type="button"
-              className={`mode${mode === 'easy' ? ' mode--on' : ''}`}
-              onClick={() => onMode('easy')}
-            >
-              <b>Lako</b>
-              <em>{choices} ponuđena područja</em>
-            </button>
-            <button
-              type="button"
-              className={`mode${mode === 'classic' ? ' mode--on' : ''}`}
-              onClick={() => onMode('classic')}
-            >
-              <b>Klasično</b>
-              <em>cela mapa</em>
-            </button>
-          </div>
+          <a className="btn btn--go" {...linkProps(href.game(topic.id, round))}>
+            Igraj
+          </a>
 
-          <div className="intro__actions">
-            {rounds.map((n) => (
-              <a
-                key={n}
-                className="btn"
-                {...linkProps(
-                  href.game(topic.id, {
-                    length: n, seed, easy: mode === 'easy', kim: withKim, timed,
-                  }),
-                )}
-              >
-                {n === codes.length
-                  ? `${topic.allLabel} · ${n}`
-                  : `${n} ${plural(n, 'pitanje', 'pitanja', 'pitanja')}`}
-              </a>
-            ))}
-          </div>
+          <button
+            type="button"
+            className="tweak"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+          >
+            <span className="tweak__summary">{summary}</span>
+            <span className="tweak__more">{open ? 'Sakrij' : 'Podesi'}</span>
+          </button>
+
+          {open && (
+            <div className="tweaks">
+              <Pick
+                label="Koliko pitanja"
+                value={length}
+                onChange={onLength}
+                of={[['10', '10'], ['25', '25'], ['sve', `Sve · ${codes.length}`]]}
+              />
+              <Pick
+                label="Težina"
+                value={mode}
+                onChange={onMode}
+                of={[['classic', 'Cela mapa'], ['easy', `${choices} ponuđena`]]}
+              />
+              <Pick
+                label="Sat"
+                value={timed ? 'on' : 'off'}
+                onChange={(v) => onTimed(v === 'on')}
+                of={[['off', 'Bez sata'], ['on', `${seconds}s po pitanju`]]}
+              />
+              {topic.offersKim && (
+                <Pick
+                  label="Kosovo i Metohija"
+                  value={withKim ? 'on' : 'off'}
+                  onChange={(v) => onKim(v === 'on')}
+                  of={[['off', 'Bez'], ['on', `Sa · ${kimCount}`]]}
+                />
+              )}
+              {topic.offersKim && withKim && <p className="tweaks__note">{topic.kimNote?.(kimCount)}</p>}
+            </div>
+          )}
+
           <p className="intro__aside">
             <a {...linkProps(href.progress())}>Pratite svoj napredak →</a>
           </p>
@@ -99,28 +161,6 @@ export function Setup({
 
         <div className="menu__show">
           <div className="intro__hero">{topic.prompt(hero)}</div>
-
-          <label className="switch">
-            <input type="checkbox" checked={timed} onChange={(e) => onTimed(e.target.checked)} />
-            <span className="switch__track" aria-hidden="true" />
-            <span className="switch__text">
-              Na vreme
-              <em>
-                {seconds} sekundi po pitanju · {mode === 'easy' ? 'među četiri ponuđena' : 'na celoj mapi'}
-              </em>
-            </span>
-          </label>
-
-          {topic.offersKim && (
-            <label className="switch">
-              <input type="checkbox" checked={withKim} onChange={(e) => onKim(e.target.checked)} />
-              <span className="switch__track" aria-hidden="true" />
-              <span className="switch__text">
-                Kosovo i Metohija
-                <em>{topic.kimNote?.(kimCount)}</em>
-              </span>
-            </label>
-          )}
         </div>
       </div>
 
@@ -141,6 +181,8 @@ export function Setup({
           </div>
         </nav>
       )}
+
+      {elsewhere && <OtherApp to={elsewhere} />}
     </div>
   )
 }

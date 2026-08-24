@@ -259,3 +259,108 @@
 @media (max-width: 420px) {
   .topics { grid-template-columns: 1fr; }
 }
+
+/* ---------- one button, and the settings behind it ---------- */
+
+/* The only thing on the page asking to be pressed. */
+.btn--go {
+  align-self: flex-start;
+  padding: 13px 34px;
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.btn--go:hover { border-color: transparent; background: var(--accent); filter: brightness(1.08); }
+
+/* What that button is about to start, and the way in to changing it. */
+.tweak {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tweak__more {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.tweak:hover .tweak__summary { color: var(--text); }
+
+.tweaks {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 16px 0 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.tweaks__note {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* align-items, or each row of pills stretches the width of the panel and the
+   pills sit adrift at one end of a very wide track. */
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.choice__label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.choice__row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.choice__pick {
+  padding: 7px 15px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.choice__pick:hover { color: var(--text); }
+.choice__pick--on { background: var(--accent-soft); color: var(--accent); }
+
+@media (max-width: 880px) {
+  .btn--go { align-self: center; width: 100%; max-width: 22rem; text-align: center; }
+  .tweak { justify-content: center; }
+  .choice { align-items: center; }
+}

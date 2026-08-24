@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { geoCentroid } from 'd3-geo'
 import { Progress } from './Progress'
-import { Setup } from './Setup'
+import { Setup, type Length } from './Setup'
 import { Game } from './Game'
-import { Corner } from './Chrome'
+import { Corner, OtherApp, type Elsewhere } from './Chrome'
 import { accountsOffered, useAccount } from './account'
 import { indexByCode, playableCodes, randomSeed } from './deck'
 import { applyTheme, systemTheme, THEMES, usePref, type Theme } from './prefs'
@@ -17,6 +17,7 @@ type Mode = 'easy' | 'classic'
 const MODES = ['easy', 'classic'] as const
 const KIM = ['on', 'off'] as const
 const TIMED = ['on', 'off'] as const
+const LENGTHS = ['10', '25', 'sve'] as const
 
 export type QuizProps = {
   /** Every quiz this app offers, by id. */
@@ -34,6 +35,8 @@ export type QuizProps = {
    * switcher appears.
    */
   siblingsLabel?: string
+  /** The sibling app, named once at the foot of the front page. */
+  elsewhere?: Elsewhere
 }
 
 /**
@@ -41,7 +44,7 @@ export type QuizProps = {
  * data. Everything specific to a subject lives in its Topic, so this is the
  * same code whether the answers are licence plates or mountains.
  */
-export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
+export function Quiz({ topics, home, title, siblingsLabel, elsewhere }: QuizProps) {
   const route = useRoute()
 
   // Every choice the player makes is remembered for next time.
@@ -50,6 +53,8 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
   const [mode, setMode] = usePref<Mode>('mode', MODES, () => 'classic')
   const [kim, setKim] = usePref<'on' | 'off'>('kim', KIM, () => 'off')
   const [timed, setTimed] = usePref<'on' | 'off'>('timed', TIMED, () => 'off')
+  // Ten to begin with: short enough to finish, long enough to be a game.
+  const [length, setLength] = usePref<Length>('duzina', LENGTHS, () => '10')
 
   const account = useAccount()
 
@@ -148,6 +153,7 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
       <main className="shell shell--scroll">
         {corner}
         {home}
+        {elsewhere && <OtherApp to={elsewhere} />}
       </main>
     )
   }
@@ -199,8 +205,11 @@ export function Quiz({ topics, home, title, siblingsLabel }: QuizProps) {
           onKim={(on) => setKim(on ? 'on' : 'off')}
           kimCount={kimCount}
           choices={CHOICES}
+          elsewhere={elsewhere}
           timed={timed === 'on'}
           onTimed={(on) => setTimed(on ? 'on' : 'off')}
+          length={length}
+          onLength={setLength}
         />
       )}
     </main>

@@ -1,6 +1,17 @@
 import puppeteer from 'puppeteer-core'
 import {readFileSync} from 'node:fs'
-const b=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new',args:['--touch-events=enabled']})
+// Tracked and closed however the run ends; a crashed check used to leave its
+// Chrome behind.
+const browsers=[]
+const launch=async opts=>{const br=await puppeteer.launch({
+  executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new',...opts})
+  browsers.push(br); return br}
+const shutdown=async()=>{for(const br of browsers.splice(0)) await br.close().catch(()=>{})}
+for (const sig of ['SIGINT','SIGTERM']) process.on(sig,()=>shutdown().then(()=>process.exit(130)))
+process.on('uncaughtException',async e=>{console.error('\n'+e.message); await shutdown(); process.exit(1)})
+process.on('unhandledRejection',async e=>{console.error('\n'+(e?.message??e)); await shutdown(); process.exit(1)})
+
+const b=await launch({args:['--touch-events=enabled']})
 const pause=ms=>new Promise(r=>setTimeout(r,ms))
 const S=process.env.URL ?? 'http://localhost:5183'
 const TIP_ROUTE='/okruzi/igra?n=25'
@@ -81,7 +92,7 @@ check('confirm scores', (await t.$eval('.bar__stats',e=>e.textContent)).includes
   // A browser of its own, without --touch-events: with them on the app is in
   // its touch mode, where there is no hover tooltip at all, and this check
   // would pass having shown none.
-  const mouse=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new'})
+  const mouse=await launch()
   const p=await mouse.newPage()
   await p.setViewport({width:1440,height:900})
   await p.goto(`${S}${TIP_ROUTE}`,{waitUntil:'networkidle0'}); await pause(800)
@@ -109,4 +120,5 @@ check('confirm scores', (await t.$eval('.bar__stats',e=>e.textContent)).includes
 }
 
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
-await b.close()
+await shutdown()
+process.exit(fails ? 1 : 0)

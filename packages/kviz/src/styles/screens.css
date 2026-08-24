@@ -46,6 +46,9 @@
    then the plate it is asking about, then how to play. */
 @media (max-width: 880px) {
   .menu {
+    /* Clears the corner, which is fixed at the top right and would otherwise
+       sit on top of the first line of the page. */
+    padding-top: 34px;
     display: flex;
     flex-direction: column;
     /* Back to full width: the top alignment the two-column layout wants would
@@ -66,9 +69,10 @@
   .menu .intro__title { order: 2; }
   .menu .intro__hero { order: 3; margin: 22px 0 24px; }
   .menu .intro__lead { order: 4; margin: 0 auto 26px; max-width: 46ch; }
-  .menu .modes { order: 5; }
-  .menu .switch { order: 6; margin: 0 auto 24px; max-width: 44ch; }
-  .menu .intro__actions { order: 7; justify-content: center; }
+  .menu .btn--go { order: 5; }
+  .menu .tweak { order: 6; margin-bottom: 4px; }
+  .menu .tweaks { order: 7; }
+  .menu .intro__aside { order: 8; }
 }
 
 .intro__hero {
@@ -377,6 +381,11 @@
 @media (max-width: 640px) {
   .siblings { margin-top: 26px; }
   .sibling__preview .plate { --plate-h: 36px; }
+
+  /* Two even columns rather than however many happen to fit, which left the
+     country with the longest serial alone on a row of its own. */
+  .siblings__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sibling { padding: 10px 8px 8px; }
 }
 
 /* The way through to the progress page, under the start buttons. */
@@ -392,3 +401,44 @@
 }
 
 .intro__aside a:hover { text-decoration: underline; }
+
+/* ---------- the other app ---------- */
+
+/* Quiet, and at the foot of the page: it is worth knowing about and worth
+   nobody's attention until they have finished with this one. */
+.elsewhere {
+  width: 100%;
+  max-width: 940px;
+  margin: 30px auto 8px;
+}
+
+.elsewhere__link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 140ms ease;
+}
+
+.elsewhere__link:hover { border-color: var(--accent); }
+
+.elsewhere__text { display: flex; flex: 1; flex-direction: column; gap: 2px; }
+.elsewhere__label { font-size: 14.5px; font-weight: 700; }
+.elsewhere__blurb { color: var(--muted); font-size: 13px; line-height: 1.4; }
+
+.elsewhere__arrow {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

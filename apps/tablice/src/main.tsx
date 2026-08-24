@@ -13,6 +13,11 @@ createRoot(document.getElementById('root')!).render(
     <Quiz
       topics={TOPICS}
       siblingsLabel="Druge zemlje"
+      elsewhere={{
+        href: 'https://geografija-srbija.vercel.app',
+        label: 'Geografija Srbije',
+        blurb: 'Reke, planine, banje i okruzi — na istoj mapi.',
+      }}
       title={(topic) =>
         topic && topic.id !== ROOT
           ? `Tablice · ${topic.label}`

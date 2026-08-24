@@ -1,6 +1,18 @@
 import puppeteer from 'puppeteer-core'
 import {readFileSync} from 'node:fs'
-const b=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new',args:['--touch-events=enabled']})
+// Every browser this run opens. A crashed check used to leave its Chrome
+// behind, and enough of those will bring a machine to its knees — so they are
+// tracked and closed on the way out however the run ends.
+const browsers=[]
+const launch=async opts=>{const br=await puppeteer.launch({
+  executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new',...opts})
+  browsers.push(br); return br}
+const shutdown=async()=>{for(const br of browsers.splice(0)) await br.close().catch(()=>{})}
+for (const sig of ['SIGINT','SIGTERM']) process.on(sig,()=>shutdown().then(()=>process.exit(130)))
+process.on('uncaughtException',async e=>{console.error('\n'+e.message); await shutdown(); process.exit(1)})
+process.on('unhandledRejection',async e=>{console.error('\n'+(e?.message??e)); await shutdown(); process.exit(1)})
+
+const b=await launch({args:['--touch-events=enabled']})
 const pause=ms=>new Promise(r=>setTimeout(r,ms))
 const S=process.env.URL ?? 'http://localhost:5183'
 const TIP_ROUTE='/hrvatska/igra?n=34'
@@ -82,7 +94,7 @@ check('confirm scores', (await t.$eval('.bar__stats',e=>e.textContent)).includes
   // A browser of its own, without --touch-events: with them on the app is in
   // its touch mode, where there is no hover tooltip at all, and this check
   // would pass having shown none.
-  const mouse=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:'new'})
+  const mouse=await launch()
   const p=await mouse.newPage()
   await p.setViewport({width:1440,height:900})
   await p.goto(`${S}${TIP_ROUTE}`,{waitUntil:'networkidle0'}); await pause(800)
@@ -442,5 +454,39 @@ if (!process.env.URL) {
   await ctx.close()
 }
 
+// the front of a topic is one button and a line saying what it will start
+{
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:1400,height:1000})
+  await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'}); await pause(500)
+
+  check('one thing to press', (await p.$$('.btn--go')).length===1)
+  check('and the settings are put away', (await p.$$('.tweaks')).length===0)
+  check('but what it will start is said out loud',
+    (await p.$eval('.tweak__summary',e=>e.textContent))==='10 pitanja · cela mapa')
+
+  await p.click('.tweak'); await pause(200)
+  check('they open when asked for', (await p.$$('.tweaks')).length===1)
+
+  // change every one and watch the line, then the link, follow
+  await p.click('.choice:nth-child(1) .choice__pick:nth-child(2)')   // 25 questions
+  await p.click('.choice:nth-child(2) .choice__pick:nth-child(2)')   // four offered
+  await p.click('.choice:nth-child(3) .choice__pick:nth-child(2)')   // with a clock
+  await pause(250)
+  check('changing them changes the line',
+    (await p.$eval('.tweak__summary',e=>e.textContent))==='25 pitanja · 4 ponuđena · 10s po pitanju',
+    await p.$eval('.tweak__summary',e=>e.textContent))
+  const href=await p.$eval('.btn--go',e=>e.getAttribute('href'))
+  check('and the button starts exactly that', /n=25/.test(href)&&/m=lako/.test(href)&&/t=1/.test(href), href)
+
+  // and they are still there next time
+  await p.goto(`${S}/hrvatska`,{waitUntil:'networkidle0'}); await pause(400)
+  check('the choices are remembered for next time',
+    /25 pitanja · 4 ponuđena/.test(await p.$eval('.tweak__summary',e=>e.textContent)),
+    await p.$eval('.tweak__summary',e=>e.textContent))
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
-await b.close()
+await shutdown()
+process.exit(fails ? 1 : 0)

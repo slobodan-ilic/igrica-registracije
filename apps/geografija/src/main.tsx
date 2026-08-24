@@ -12,6 +12,11 @@ createRoot(document.getElementById('root')!).render(
     <Quiz
       topics={TOPICS}
       home={<Home />}
+      elsewhere={{
+        href: 'https://tablice.vercel.app',
+        label: 'Tablice',
+        blurb: 'Registarske oznake šest zemalja, od Srbije do stare Jugoslavije.',
+      }}
       title={(topic) =>
         topic ? `${topic.label} · geografija Srbije` : 'Geografija Srbije · kviz'
       }

@@ -140,3 +140,30 @@ function AccountChip({
   }
   return <div className="account account--google" key="out" ref={setSlot} />
 }
+
+/**
+ * The other app. They are separate games at separate addresses, but they share
+ * an engine, a look and an author, and someone who likes one is the likeliest
+ * person to want the other — so each says the other exists, once, quietly, at
+ * the bottom of its front page.
+ *
+ * A plain anchor rather than the app's own link handling: this one really does
+ * leave, and the router here knows nothing about the other app's routes.
+ */
+export type Elsewhere = { href: string; label: string; blurb: string }
+
+export function OtherApp({ to }: { to: Elsewhere }) {
+  return (
+    <aside className="elsewhere">
+      <a className="elsewhere__link" href={to.href}>
+        <span className="elsewhere__text">
+          <b className="elsewhere__label">{to.label}</b>
+          <span className="elsewhere__blurb">{to.blurb}</span>
+        </span>
+        <svg className="elsewhere__arrow" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" />
+        </svg>
+      </a>
+    </aside>
+  )
+}

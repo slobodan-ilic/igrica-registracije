@@ -16,6 +16,7 @@ export type {
 
 // Building blocks an app needs to describe its own topics.
 export { NameCard } from './NameCard'
+export type { Elsewhere } from './Chrome'
 export { plural, allOf, cap } from './sr'
 export { joinSr } from './deck'
 export { href, linkProps, setRootTopic, hasChooser } from './router'
