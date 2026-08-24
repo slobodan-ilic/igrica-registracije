@@ -38,7 +38,7 @@ not, and the ones that are not are the work that remains. **Four of seven hold.*
 
 ## 2 · The record — what is built
 
-Forty-three commits between 14 and 24 August 2026, in eight areas. Everything
+Forty-four commits between 14 and 24 August 2026, in eight areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -116,6 +116,11 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 - A link to any country, to `/dnevni` or to `/napredak` previews as that
   country's plate — drawn on demand by a function under `api/`, 1200×630, with
   the real coat of arms on it.
+- The daily's picture follows the daily. The page is written once and the
+  country changes every day, so the choice is made when the picture is asked
+  for, and the rule that makes it lives in one file both the picture and the
+  challenge read — `packages/kviz/src/rota.ts`. It only caches until the
+  country turns over in Belgrade, rather than for a flat day.
 - The tags are written into each route's own HTML at build time rather than set
   by React, because the crawlers that draw previews do not run JavaScript.
   Everyone is served the same HTML, crawler and browser alike — no sniffing the
@@ -150,7 +155,7 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 88 browser checks across the two apps, each written to fail before it was made
+- 92 browser checks across the two apps, each written to fail before it was made
   to pass — the daily's, the preview's and the share's were each watched failing
   with the feature removed.
 
@@ -200,13 +205,6 @@ Things that work but are wrong, or that were left half-done and have stayed
 that way. Not features — none of these would appear on a list of what the app
 lacks, and every one of them is visible to somebody using it. Fix them between
 the numbered items rather than after them.
-
-### The daily challenge previews as Serbia whatever country it is
-
-`/dnevni` walks the six countries, but its link preview always shows Serbia's
-plate, because the picture is chosen when the page is built and the country
-changes daily. A shared daily therefore advertises the wrong quiz five days in
-six.
 
 ### The geography app's progress can never leave the browser
 

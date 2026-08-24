@@ -749,6 +749,53 @@ if (!process.env.URL) {
   await ctx.close()
 }
 
+// the daily's preview must be the country the daily actually is. The picture
+// and the challenge are two implementations of one rule, so this asks both.
+if (process.env.URL) {
+  const html=await (await fetch(`${S}/dnevni`,{headers:{'user-agent':'facebookexternalhit/1.1'}})).text()
+  const image=html.match(/<meta[^>]*property="og:image"[^>]*>/)?.[0]?.match(/content="([^"]*)"/)?.[1] ?? ''
+  check('the daily asks for a picture that is chosen when it is asked for',
+    /t=dnevni/.test(image), image)
+
+  // Six days is a full turn of the rota, so this sees every country once.
+  const days=['2026-08-24','2026-08-25','2026-08-26','2026-08-27','2026-08-28','2026-08-29']
+  const drawn=[]
+  for (const d of days) {
+    const r=await fetch(`${S}/api/og?t=dnevni&d=${d}`)
+    drawn.push(r.headers.get('x-plate'))
+  }
+  check('and it draws a different country each day', new Set(drawn).size===6, drawn.join(' '))
+
+  // What the app deals on those days, from the app itself rather than from a
+  // second copy of the rule here.
+  const ctx=await b.createBrowserContext()
+  const dealt=[]
+  for (const d of days) {
+    const p=await ctx.newPage(); await p.setViewport({width:1000,height:800})
+    await p.evaluateOnNewDocument(fixed=>{
+      const Real=Date, when=Real.parse(fixed+'T09:00:00Z')
+      class Frozen extends Real {
+        constructor(...a){ super(...(a.length? a : [when])) }
+        static now(){ return when }
+      }
+      window.Date=Frozen
+    }, d)
+    await p.goto(`${S}/dnevni`,{waitUntil:'networkidle0'}); await pause(500)
+    dealt.push((await p.$eval('.btn--go',e=>e.getAttribute('href')).catch(()=>'')).split('/')[1] ?? '')
+    await p.close()
+  }
+  await ctx.close()
+
+  check('the picture and the challenge never disagree',
+    JSON.stringify(drawn)===JSON.stringify(dealt),
+    drawn.map((c,i)=>c===dealt[i]? c : `${c}≠${dealt[i]}`).join(' '))
+
+  const head=await fetch(`${S}/api/og?t=dnevni`)
+  const holds=Number(head.headers.get('cache-control')?.match(/max-age=(\d+)/)?.[1] ?? 0)
+  check('and it is only cached until the country changes',
+    holds>0 && holds<=86400, `${Math.round(holds/3600)}h`)
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await shutdown()
 process.exit(fails ? 1 : 0)

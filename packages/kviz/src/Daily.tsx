@@ -1,6 +1,6 @@
 import { BackLink } from './Chrome'
 import { href, linkProps } from './router'
-import { attempt, number, round, today, topicFor, LENGTH } from './challenge'
+import { attempt, countryFor, number, round, today, LENGTH } from './challenge'
 import { plural } from './sr'
 import type { Topic } from './topic'
 
@@ -11,8 +11,7 @@ import type { Topic } from './topic'
  */
 export function Daily({ topics }: { topics: Record<string, Topic> }) {
   const day = today()
-  const ids = Object.keys(topics)
-  const topic = topics[topicFor(ids, day)]
+  const topic = topics[countryFor(day)]
   const n = Math.min(LENGTH, topic.count)
   const played = attempt(topic.id, day)
 

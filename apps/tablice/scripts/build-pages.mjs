@@ -30,9 +30,15 @@ const PAGES = {
   napredak: ['Vaš napredak · Tablice', 'Tačnost kroz vreme, po zemljama, i oznake koje vas najviše muče.'],
 }
 
-/** The picture each route shares. The daily borrows whichever country it is. */
+/**
+ * The picture each route shares.
+ *
+ * The daily asks for `t=dnevni` rather than a country, because this file is
+ * written once at build time and the country changes every day — so the choice
+ * has to be made when the picture is asked for, not when the page is made.
+ */
 const picture = (route) =>
-  `${SITE}/api/og?t=${route === 'dnevni' || route === 'napredak' ? 'srbija' : route}`
+  `${SITE}/api/og?t=${route === 'napredak' ? 'srbija' : route}`
 
 const escape = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')

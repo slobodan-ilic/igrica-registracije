@@ -10,8 +10,22 @@
 // forget to update.
 
 import { ImageResponse } from '@vercel/og'
+// The same rule the challenge itself follows, imported rather than repeated:
+// this picture said Serbia every day precisely because it had its own copy.
+// The .js extension is what Node's own module resolution wants; it resolves
+// to rota.ts at build time.
+import { ZONE, countryFor, today } from '../packages/kviz/src/rota.js'
 
 export const config = { runtime: 'edge' }
+
+/**
+ * Satori reads the element tree as data rather than rendering React, so plain
+ * objects of this shape are what it wants — but ImageResponse is typed for a
+ * real ReactElement. Named here so the cast happens once, at the boundary,
+ * rather than being scattered through the tree.
+ */
+type Node = { type: string; props: Record<string, unknown> }
+const asElement = (tree: Node) => tree as unknown as ConstructorParameters<typeof ImageResponse>[0]
 
 /**
  * What every country's plate needs, and nothing more than the picture uses.
@@ -48,15 +62,37 @@ const STAR =
 const W = 1200
 const H = 630
 
-export default function handler(req) {
+/**
+ * Seconds until the day turns over in Belgrade. The daily's picture is asked
+ * for at one address every day and has to be a different picture each time, so
+ * it may only be cached until the country changes — not for a flat day, which
+ * would leave it a few hours stale every morning.
+ */
+function untilTomorrow(now: Date) {
+  const midnight = Date.parse(`${today(new Date(now.getTime() + 86_400_000))}T00:00:00Z`)
+  const hereNow = Date.parse(`${today(now)}T${new Intl.DateTimeFormat('en-GB', {
+    timeZone: ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(now)}Z`)
+  return Math.max(60, Math.round((midnight - hereNow) / 1000))
+}
+
+export default function handler(req: Request) {
   const url = new URL(req.url)
-  const topic = url.searchParams.get('t') ?? 'srbija'
+  const asked = url.searchParams.get('t') ?? 'srbija'
+  // A date may be given so the rotation can be checked without waiting a day.
+  const when = url.searchParams.get('d')
+  const daily = asked === 'dnevni'
+  const topic = daily ? countryFor(when ?? today()) : asked
   const plate = PLATES[topic] ?? PLATES.srbija
   const yu = topic === 'jugoslavija'
   const site = `${url.protocol}//${url.host}`
 
   return new ImageResponse(
-    {
+    asElement({
       type: 'div',
       props: {
         style: {
@@ -142,14 +178,20 @@ export default function handler(req) {
           },
         ],
       },
-    },
+    }),
     {
       width: W,
       height: H,
       headers: {
-        // Long enough that a crawler is not re-rendering it, short enough that
-        // a change to the picture reaches the world within a day.
-        'cache-control': 'public, max-age=86400, s-maxage=86400',
+        // The daily's picture only holds until the country changes; everything
+        // else is the same tomorrow as it is today.
+        'cache-control': daily
+          ? `public, max-age=${untilTomorrow(new Date())}, s-maxage=${untilTomorrow(new Date())}`
+          : 'public, max-age=86400, s-maxage=86400',
+        // Which country is in the picture. Nothing reads this in a browser; it
+        // is here so the rotation can be checked without decoding a PNG and
+        // guessing from its size, which is what the first attempt did.
+        'x-plate': topic,
       },
     },
   )

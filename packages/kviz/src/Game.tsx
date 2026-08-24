@@ -22,9 +22,6 @@ type Props = {
   byCode: Map<string, RegionProps>
   centroids: Map<string, [number, number]>
   playable: Set<string>
-  /** Every topic this app has, so a finished round can tell whether it was the
-   *  day's challenge — which decides whether the shared result wears a number. */
-  topics: string[]
   /** What round this is: how long, dealt from which seed, played how. */
   round: Round
   touch: boolean
@@ -73,20 +70,12 @@ function InContext({ round }: { round: Played }) {
  * just happened when you pressed it — and the summary around it should not
  * re-render for that.
  */
-function Share({
-  round,
-  label,
-  topics,
-}: {
-  round: Played
-  label: string
-  topics: string[]
-}) {
+function Share({ round, label }: { round: Played; label: string }) {
   const [said, setSaid] = useState<string | null>(null)
 
   const text = shareText(round, {
     label,
-    daily: numberOf(topics, round),
+    daily: numberOf(round),
     site: 'tablice.vercel.app',
   })
 
@@ -198,7 +187,7 @@ export function Game(props: Props) {
         />
 
         <div className="intro__actions">
-          {played && <Share round={played} label={topic.label} topics={props.topics} />}
+          {played && <Share round={played} label={topic.label} />}
           <button className="btn" onClick={again}>
             Igraj ponovo
           </button>
