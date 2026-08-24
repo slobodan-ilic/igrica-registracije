@@ -89,6 +89,15 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   records what you picked, not merely whether you were right.
 - Easy and clocked rounds counted apart from the whole map, since guessing among
   four scores 25% and guessing on the map scores one in seventy.
+- With nothing played yet, `/napredak` says what it will hold, shows what one of
+  those lines looks like, and offers both ways to fill it — rather than a
+  heading and a button in an empty screen. Local-first stands: the page says an
+  account is not needed, and mentions it only as the thing that carries progress
+  between devices.
+- The end of a round says what the score means against the rounds before it —
+  "najbolje do sada", or how it sits against your usual for that country. Nine
+  out of ten is a triumph across Yugoslavia's 125 towns and unremarkable among
+  four choices, so the number alone tells nobody how they did.
 
 ### Coming back · shipped 24 Aug
 
@@ -191,27 +200,6 @@ Things that work but are wrong, or that were left half-done and have stayed
 that way. Not features — none of these would appear on a list of what the app
 lacks, and every one of them is visible to somebody using it. Fix them between
 the numbered items rather than after them.
-
-### The progress page has nothing to say to a newcomer
-
-`/napredak` with nothing played is a heading, a sentence and a button in an
-otherwise empty screen, and it never mentions that signing in is what carries
-progress between devices. Someone arriving from the menu link learns nothing
-and leaves.
-
-**Open question, and it is a product decision rather than a bug.** Progress is
-local first by design — it is kept in the browser whether or not anyone signs
-in, so a child on a borrowed iPad gets their history without meeting a login.
-"It shouldn't work if you're not logged in" would reverse that. There are two
-readings and they lead to different apps:
-
-- *the empty page should sell the account* — keep local-first, and make the
-  empty state say what an account adds
-- *the page should require an account* — progress becomes a reason to sign in
-  rather than something you already have
-
-The first is what is built and what section 1 assumes. The second is a
-deliberate change worth making on purpose if that is the intent.
 
 ### The daily challenge previews as Serbia whatever country it is
 

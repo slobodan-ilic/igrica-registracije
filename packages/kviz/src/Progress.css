@@ -253,3 +253,40 @@
   color: var(--muted);
   font-size: 13px;
 }
+
+/* ---------- before anything has been played ---------- */
+
+/* Centred vertically rather than pinned to the top of a full-height page: a
+   short page under an expanse of nothing reads as broken. Everything inside it
+   reads down one left edge, though — .intro centres its lead and its buttons,
+   which here left the page aligned three different ways at once. */
+.napredak--empty { margin: auto 0; }
+.napredak--empty .intro__lead { margin-left: 0; margin-right: 0; }
+.napredak--empty .intro__actions { justify-content: flex-start; }
+
+.waiting {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 22px 0 26px;
+  padding: 0;
+  list-style: none;
+}
+
+.waiting li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.waiting li:first-child { border-top: 1px solid var(--line); }
+.waiting b { font-size: 14.5px; font-weight: 700; }
+.waiting span { color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+.waiting em {
+  color: var(--bad-ink);
+  font-style: normal;
+  font-weight: 600;
+}

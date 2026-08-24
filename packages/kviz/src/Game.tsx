@@ -4,9 +4,11 @@ import { BackLink, Stat, Streak, ThemeToggle } from './Chrome'
 import { ContactSheet, Photo } from './Photo'
 import { hasChooser, href, linkProps, navigate, type Round } from './router'
 import { joinSr } from './deck'
+import { plural } from './sr'
 import { randomSeed } from './deck'
 import { record, sync, type Played } from './history'
 import { numberOf } from './challenge'
+import { against } from './stats'
 import { send, shareText } from './share'
 import { budget, CHOICES, useRound } from './useRound'
 import type { Theme } from './prefs'
@@ -28,6 +30,42 @@ type Props = {
   touch: boolean
   theme: Theme
   onTheme: (t: Theme) => void
+}
+
+/**
+ * What the score means, given the ones before it. Nine out of ten is a triumph
+ * across Yugoslavia's hundred and twenty-five towns and unremarkable among four
+ * choices, so the number alone tells nobody how they did.
+ *
+ * Silent on a first round, because there is nothing honest to say yet.
+ */
+function InContext({ round }: { round: Played }) {
+  const seen = against(round, round.app)
+  if (!seen) return null
+
+  // "u prethodnoj partiji" · "u prethodne 3 partije" · "u prethodnih 8 partija" —
+  // the adjective and the noun both decline, and the number drops out entirely
+  // when there is one.
+  const n = seen.rounds
+  const before =
+    n === 1
+      ? 'u prethodnoj partiji'
+      : `u ${plural(n, 'prethodnu', 'prethodne', 'prethodnih')} ${n} ${plural(n, 'partiju', 'partije', 'partija')}`
+
+  if (seen.best) {
+    return <p className="context context--best">Najbolje do sada — bolje nego {before}.</p>
+  }
+  if (seen.equalled) {
+    return <p className="context">Izjednačeno sa vašim najboljim rezultatom.</p>
+  }
+
+  const gap = Math.abs(seen.better)
+  return (
+    <p className="context">
+      Vaš prosek za ovu zemlju je {seen.usual}%
+      {gap >= 1 && <> — ovo je {gap} {plural(gap, 'poen', 'poena', 'poena')} {seen.better > 0 ? 'iznad' : 'ispod'} toga</>}.
+    </p>
+  )
 }
 
 /**
@@ -149,6 +187,8 @@ export function Game(props: Props) {
             </>
           )}
         </p>
+
+        {played && <InContext round={played} />}
 
         <ContactSheet
           topic={topic.id}

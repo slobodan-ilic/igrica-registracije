@@ -108,6 +108,41 @@ export type Mode = 'all' | 'easy' | 'classic'
 const inMode = (r: Played, mode: Mode) =>
   mode === 'all' || (mode === 'easy' ? r.easy : !r.easy)
 
+/**
+ * How a round compares with the ones before it — the same country, played the
+ * same way, and not counting the round itself.
+ *
+ * A score on its own says nothing: nine out of ten is a triumph on the whole
+ * map of Yugoslavia and unremarkable among four choices. This is what turns the
+ * number at the end of a round into a sentence about you.
+ */
+export function against(round: Played, app?: string) {
+  const before = history().filter(
+    (r) =>
+      r.id !== round.id &&
+      r.topic === round.topic &&
+      r.easy === round.easy &&
+      r.timed === round.timed &&
+      r.answers.length > 0 &&
+      (app ? r.app === app : true),
+  )
+  if (!before.length) return null
+
+  const here = pct(round.score, round.answers.length)
+  const usual = tally(before).accuracy
+  const bestBefore = Math.max(...before.map((r) => pct(r.score, r.answers.length)))
+
+  return {
+    rounds: before.length,
+    usual,
+    /** Percentage points above or below the usual, which may be negative. */
+    better: here - usual,
+    best: here > bestBefore,
+    /** True when this ties the best rather than beating it. */
+    equalled: here === bestBefore,
+  }
+}
+
 /** Everything the progress page shows, from what this browser has kept. */
 export function progress(app?: string, mode: Mode = 'all') {
   const played = history().filter((r) => (app ? r.app === app : true) && r.answers.length > 0)

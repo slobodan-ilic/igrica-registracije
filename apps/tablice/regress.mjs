@@ -331,8 +331,8 @@ if (!process.env.URL) {
   await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'})
   await p.evaluate(()=>localStorage.removeItem('tablice.history'))
   await p.goto(`${S}/napredak`,{waitUntil:'networkidle0'}); await pause(400)
-  check('with nothing played it invites you to play',
-    (await p.$$('.tile')).length===0 && /Odigrajte/.test(await p.$eval('.intro__lead',e=>e.textContent)))
+  check('with nothing played there are no numbers to show',
+    (await p.$$('.tile')).length===0 && /skuplja/.test(await p.$eval('.intro__lead',e=>e.textContent)))
 
   // 3 rounds: srbija 4/5 then 5/5, hrvatska 1/2. KŠ mistaken for Kraljevo twice.
   const rounds=[
@@ -696,6 +696,56 @@ if (!process.env.URL) {
   check('the daily wears its number', /^Tablice #\d+ · \d\/2/.test(shared), shared.split('\n')[0])
   void day
   }
+  await ctx.close()
+}
+
+// the progress page must be worth opening before anything has been played,
+// and a score must land against the scores before it
+if (!process.env.URL) {
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:1200,height:900})
+
+  await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'})
+  await p.evaluate(()=>localStorage.removeItem('tablice.history'))
+  await p.goto(`${S}/napredak`,{waitUntil:'networkidle0'}); await pause(500)
+  const cold=await p.evaluate(()=>({
+    explains:document.querySelectorAll('.waiting li').length,
+    actions:[...document.querySelectorAll('.btn')].map(e=>e.textContent),
+    signIn:!!document.querySelector('.napredak__nudge'),
+    edges:new Set(['h1','.intro__lead','.waiting li b','.btn']
+      .map(s=>Math.round(document.querySelector(s).getBoundingClientRect().x))).size}))
+  check('with nothing played it says what it will hold', cold.explains===3, `${cold.explains} lines`)
+  check('and offers two ways to fill it', cold.actions.length===2, cold.actions.join(' · '))
+  check('and mentions the account that carries it across', cold.signIn)
+  check('all of it down one edge', cold.edges===1, `${cold.edges} different left edges`)
+
+  // a score on its own says nothing, so it is put against the ones before it
+  const feats=JSON.parse(readFileSync('data/crnagora.json','utf8')).features.map(f=>f.properties)
+  const one=async (right,seed)=>{
+    await p.goto(`${S}/crnagora/igra?n=1&s=${seed}`,{waitUntil:'networkidle0'}); await pause(700)
+    const asked=await p.evaluate(()=>document.querySelector('.plate__code')?.textContent)
+    const pt=await p.evaluate((c,ok)=>{
+      const el=document.querySelector(`[data-code="${c}"]`)
+      const other=[...document.querySelectorAll('[data-code]')].find(e=>e.getAttribute('data-code')!==c)
+      const use=ok? el : other
+      const r=use.getBoundingClientRect()
+      for(let fy=0.25;fy<0.85;fy+=0.06)for(let fx=0.25;fx<0.85;fx+=0.06){
+        const x=r.x+r.width*fx,y=r.y+r.height*fy
+        if(document.elementFromPoint(x,y)?.closest('[data-code]')===use)return{x,y}}
+      return {x:r.x+r.width/2,y:r.y+r.height/2}}, feats.find(f=>f.code===asked).code, right)
+    await p.mouse.click(pt.x,pt.y); await pause(1200)
+    const on=await p.$('.quiz .btn--sm'); if(on){ await on.click(); await pause(500) }
+    await pause(500)
+  }
+
+  await p.evaluate(()=>localStorage.removeItem('tablice.history'))
+  await one(false,'prvi')
+  check('the first round says nothing about the ones before it',
+    (await p.$$('.context')).length===0, 'nothing to compare it with yet')
+
+  await one(true,'drugi')
+  const said=await p.$eval('.context',e=>e.textContent).catch(()=>null)
+  check('a later round is put against them', !!said && /Najbolje do sada/.test(said), said)
   await ctx.close()
 }
 

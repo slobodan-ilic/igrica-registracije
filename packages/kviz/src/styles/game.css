@@ -197,3 +197,15 @@
 @media (prefers-reduced-motion: reduce) {
   .clock__left { transition: none; }
 }
+
+/* What the score means, given the ones before it. */
+.context {
+  margin: -6px 0 2px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.context--best {
+  color: var(--ok-ink);
+  font-weight: 600;
+}

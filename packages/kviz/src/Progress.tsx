@@ -177,18 +177,47 @@ export function Progress({
   const p = useMemo(() => progress(appName(), mode), [mode])
   const label = (id: string) => topics[id]?.label ?? id
 
+  // Nothing played yet. A heading and a button in an empty screen teaches
+  // nobody anything, so this says what the page will hold, shows what one of
+  // those lines looks like, and offers the two ways to fill it — play a round,
+  // or sign in and bring across what was played somewhere else.
   if (!counts.easy && !counts.classic) {
     return (
-      <div className="intro intro--menu">
+      <div className="intro intro--menu napredak napredak--empty">
         <BackLink to={href.home()} label="Nazad" />
         <h1 className="intro__title">Vaš napredak</h1>
         <p className="intro__lead">
-          Ovde se skuplja sve što odigrate — tačnost, najduži niz i oznake koje vas najviše
-          muče. Odigrajte jednu partiju pa se vratite.
+          Ovde se skuplja sve što odigrate. Čuva se u ovom pregledaču — nalog nije potreban.
         </p>
+
+        <ul className="waiting">
+          <li>
+            <b>Tačnost kroz vreme</b>
+            <span>partiju po partiju, i posebno za svaku zemlju</span>
+          </li>
+          <li>
+            <b>Najduži niz i prosečno vreme</b>
+            <span>koliko tačnih zaredom, i koliko vam treba po pitanju</span>
+          </li>
+          <li>
+            <b>Oznake koje najčešće pogrešite</b>
+            <span>
+              ono najkorisnije — na primer <em>KŠ → Kraljevo, 6 puta</em>
+            </span>
+          </li>
+        </ul>
+
         <div className="intro__actions">
-          <a className="btn" {...linkProps(href.home())}>Igraj</a>
+          <a className="btn btn--go" {...linkProps(href.daily())}>Dnevni izazov</a>
+          <a className="btn" {...linkProps(href.home())}>Izaberi zemlju</a>
         </div>
+
+        {accounts && !player && (
+          <p className="napredak__nudge">
+            Već ste igrali na drugom uređaju? Prijavite se gore desno i napredak dolazi sa
+            vama.
+          </p>
+        )}
       </div>
     )
   }
