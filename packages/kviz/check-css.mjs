@@ -1,4 +1,5 @@
-// Two stylesheets in the engine must not claim the same class name.
+// Two things the engine must not do: claim one class name from two
+// stylesheets, or name two files the same but for their case.
 //
 // This has bitten twice: a page called its wrapper .progress and inherited the
 // game's 4px progress bar, hiding itself; a list of countries called its rows
@@ -45,4 +46,31 @@ if (clashes.length) {
   console.error(clashes.join('\n'))
   process.exit(1)
 }
-console.log(`  ✓ no component borrows a class the system already owns — ${owners.size} checked`)
+
+/**
+ * macOS does not distinguish Daily.tsx from daily.ts, and TypeScript refuses
+ * the pair rather than guess which was meant. It has caught us twice — a
+ * component and the module behind it are the obvious thing to name alike.
+ */
+// The clash is between module names, so the extension comes off first:
+// Progress.tsx beside Progress.css is a component and its stylesheet and is
+// fine, while Daily.tsx beside daily.ts is the pair that cannot both exist.
+const stem = (f) => f.replace(/\.[^.]+$/, '')
+const byLowercase = new Map()
+const twins = []
+for (const f of readdirSync(src)) {
+  const seen = byLowercase.get(stem(f).toLowerCase())
+  if (seen && stem(seen) !== stem(f)) twins.push(`  ${seen} and ${f}`)
+  byLowercase.set(stem(f).toLowerCase(), f)
+}
+
+if (twins.length) {
+  console.error('files whose names differ only in case:')
+  console.error(twins.join('\n'))
+  process.exit(1)
+}
+
+console.log(
+  `  ✓ no component borrows a class the system already owns — ${owners.size} checked` +
+    `\n  ✓ no two source files differ only in case — ${byLowercase.size} checked`,
+)

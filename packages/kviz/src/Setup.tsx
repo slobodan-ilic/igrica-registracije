@@ -3,6 +3,7 @@ import { BackLink, OtherApp, type Elsewhere } from './Chrome'
 import { hasChooser, href, linkProps } from './router'
 import { randomSeed } from './deck'
 import { budget, CHOICES } from './useRound'
+import { number, today } from './challenge'
 import { plural } from './sr'
 import type { Topic } from './topic'
 import type { RegionProps } from './types'
@@ -107,6 +108,11 @@ export function Setup({
           <p className="intro__eyebrow">{topic.blurb}</p>
           <h1 className="intro__title">{topic.title}</h1>
           <p className="intro__lead">{topic.lead(codes.length)}</p>
+
+          <a className="today" {...linkProps(href.daily())}>
+            <span className="today__dot" aria-hidden="true"></span>
+            Dnevni izazov <b>#{number(today())}</b>
+          </a>
 
           <a className="btn btn--go" {...linkProps(href.game(topic.id, round))}>
             Igraj

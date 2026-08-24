@@ -21,13 +21,13 @@ plates to Yugoslavia's as they stood in 1985.
 
 These seven lines are the acceptance criteria. Not a feature list — a
 description of the experience when it works. Each is either true today or it is
-not, and the ones that are not are the work that remains. **Two of seven hold.**
+not, and the ones that are not are the work that remains. **Three of seven hold.**
 
 | | | |
 | --- | --- | --- |
 | — | **Someone can find it.** | Today it is a URL nobody knows. People search "čija je tablica PP", and three lookup sites already answer them. |
 | ✓ | **They can play in one tap, with no setup.** | One button; every setting remembered and put away behind it. |
-| — | **There is a reason to come back tomorrow.** | Nothing today brings anyone back. The single biggest gap. |
+| ✓ | **There is a reason to come back tomorrow.** | A daily challenge at `/dnevni` — one round, the same for everyone, a different country each day. |
 | ✓ | **They can see they are improving.** | Accuracy over time and per country, kept per device and synced to an account. |
 | — | **They can practise exactly what they are bad at.** | The data exists — the confusion pairs — but nothing acts on it yet. |
 | — | **They can compare themselves to others, fairly.** | Needs comparable rounds before it needs a table. See section 4. |
@@ -37,7 +37,7 @@ not, and the ones that are not are the work that remains. **Two of seven hold.**
 
 ## 2 · The record — what is built
 
-Thirty-seven commits between 14 and 24 August 2026, in five areas. Everything
+Thirty-nine commits between 14 and 24 August 2026, in six areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -89,6 +89,18 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 - Easy and clocked rounds counted apart from the whole map, since guessing among
   four scores 25% and guessing on the map scores one in seventy.
 
+### Coming back · shipped 24 Aug
+
+- A daily challenge at `/dnevni`: one round a day, seeded from the date, the same
+  questions in the same order for everyone dealt it.
+- The day turns over at midnight in **Belgrade**, not at UTC — almost everyone
+  playing is in that hour, and a challenge changing at two in the morning would
+  be a puzzle about time zones.
+- It walks the six countries rather than staying on the flagship, so which one
+  it is today is itself a small reason to look.
+- Ten questions, whole map, no clock — the one shape a board can rank.
+- Played once: come back the same day and it shows your score, not another go.
+
 ### Underneath · shipped 17–24 Aug
 
 - Two apps over one shared engine, deployed as separate projects from one
@@ -97,27 +109,18 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 61 browser checks across the two apps, each written to fail before it was made
-  to pass.
+- 68 browser checks across the two apps, each written to fail before it was made
+  to pass — the daily's seven were watched failing with the feature removed.
 
 ---
 
 ## 3 · Outstanding — what still needs doing
 
-Six pieces of work, in the order they have to happen. Each exists because the
+Five pieces of work, in the order they have to happen. Each exists because the
 next one needs it. Built out of order most land in an empty room: a leaderboard
 with three names on it advertises that nobody is here.
 
-### 1. Daily challenge — **next**
-
-One round a day, the same for everyone, seeded from the date. Rounds are already
-dealt from a seed, so this is mostly naming today's.
-
-- **Unlocks** sharing · leaderboards · streaks
-- **Depends on** nothing — seeded rounds already exist
-- **Touches** `packages/kviz/src/router.ts`, a topic entry, one date-to-seed function
-
-### 2. Link previews — **next**
+### 1. Link previews — **next**
 
 A shared link should show the plate, not a grey rectangle. One serverless
 function rendering an image per topic and per daily round.
@@ -126,7 +129,7 @@ function rendering an image per topic and per daily round.
 - **Depends on** nothing
 - **Touches** a new function under `api/`, meta tags per route
 
-### 3. Shareable result — **next**
+### 2. Shareable result — **next**
 
 A compact grid that gives away the score and none of the answers, so posting it
 is an invitation rather than a spoiler.
@@ -141,7 +144,7 @@ tablice.vercel.app
 - **Depends on** the daily challenge
 - **Touches** the end-of-round screen in `Game.tsx`, clipboard, share sheet
 
-### 4. Practise your mistakes — **after**
+### 3. Practise your mistakes — **after**
 
 A round dealt entirely from the codes you keep getting wrong. This is what turns
 a toy into a study tool, and nothing else on the web can copy it — every answer
@@ -151,7 +154,7 @@ here already records *what you picked*.
 - **Depends on** nothing — the confusion pairs are already recorded
 - **Touches** `deck.ts`, `stats.ts`, one new round type
 
-### 5. Code pages — **after**
+### 4. Code pages — **after**
 
 One page per code — 310 of them — answering the question people actually type
 into a search box, with the map beside it and a way into the quiz. A doorway,
@@ -161,14 +164,14 @@ never a tool inside the game.
 - **Depends on** nothing
 - **Touches** 310 static routes, the map component, a sitemap
 
-### 6. Leaderboards — **last**
+### 5. Leaderboards — **last**
 
-Deliberately last. It needs comparable rounds (item 1) and it needs people
-(items 2, 3, 5). Shipped today it would be an empty table with one name on it
-three times.
+Deliberately last. It needs people, which items 1, 2 and 4 bring. The
+comparable round it ranks already exists — the daily. Shipped today it would be
+an empty table with one name on it three times.
 
 - **Unlocks** a reason to return once the novelty goes
-- **Depends on** the daily challenge, and people
+- **Depends on** people
 - **Touches** a fourth table, two endpoints, a screen
 
 ---

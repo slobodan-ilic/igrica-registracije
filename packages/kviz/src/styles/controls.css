@@ -262,8 +262,16 @@
 
 /* ---------- one button, and the settings behind it ---------- */
 
-/* The only thing on the page asking to be pressed. */
+/* The only thing on the page asking to be pressed.
+
+   inline-flex, not the .btn default of inline: everywhere else a button sits
+   inside a flex row and becomes a flex item, but this one stands on its own in
+   a block, where an inline box's padding bleeds over whatever margin precedes
+   it instead of clearing it. */
 .btn--go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   align-self: flex-start;
   padding: 13px 34px;
   border-color: transparent;

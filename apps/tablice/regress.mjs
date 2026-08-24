@@ -487,6 +487,80 @@ if (!process.env.URL) {
   await ctx.close()
 }
 
+// the daily challenge: everyone gets the same round on a given day, and a
+// different one the next. The clock is frozen before the app loads, so
+// "tomorrow" is a real test rather than a wait.
+{
+  const at=async iso=>{
+    const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+    await p.setViewport({width:1200,height:900})
+    await p.evaluateOnNewDocument(fixed=>{
+      const Real=Date, when=Real.parse(fixed)
+      class Frozen extends Real {
+        constructor(...a){ super(...(a.length? a : [when])) }
+        static now(){ return when }
+      }
+      window.Date=Frozen
+    }, iso)
+    // Tolerant on purpose: with no daily challenge the router sends /dnevni
+    // home, and this should report a failed check rather than kill the run.
+    await p.goto(`${S}/dnevni`,{waitUntil:'domcontentloaded'}).catch(()=>{})
+    await pause(900)
+    const out=await p.evaluate(()=>({
+      there:!!document.querySelector('.daily'),
+      number:document.querySelector('.intro__title')?.textContent,
+      eyebrow:document.querySelector('.intro__eyebrow')?.textContent,
+      play:document.querySelector('.btn--go')?.getAttribute('href'),
+      score:document.querySelector('.daily__points')?.textContent?.trim() ?? null,
+    }))
+    await ctx.close(); return out
+  }
+
+  // Belgrade is two hours ahead of UTC in August, so 21:00 UTC is already the
+  // 25th there — which is the whole point of not using UTC.
+  const morning=await at('2026-08-24T08:00:00Z')
+  check('there is a daily challenge at /dnevni', morning.there,
+    morning.there? '' : 'no daily screen — /dnevni went somewhere else')
+
+  const evening=morning.there? await at('2026-08-24T18:00:00Z') : morning
+  const tomorrow=morning.there? await at('2026-08-24T22:30:00Z') : morning
+
+  check('the same day deals the same round', morning.play===evening.play && !!morning.play,
+    `${morning.play} vs ${evening.play}`)
+  check('the next day deals a different one', tomorrow.play!==morning.play,
+    `${morning.play} → ${tomorrow.play}`)
+  check('the day turns over in Belgrade, not at UTC',
+    morning.number==='#1' && tomorrow.number==='#2', `${morning.number} → ${tomorrow.number}`)
+  check('the round is the one shape a board can rank',
+    /n=10/.test(morning.play) && !/m=lako/.test(morning.play) && !/t=1/.test(morning.play),
+    morning.play)
+  check('and it says which country it is', /·/.test(morning.eyebrow||''), morning.eyebrow)
+
+  // played once: after a round, the challenge shows the score rather than a replay
+  if (morning.there) {
+    const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+    await p.setViewport({width:1200,height:900})
+    await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'})
+    const day=await p.evaluate(()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Belgrade'}).format(new Date()))
+    const topic=await (async()=>{const q=await p.evaluate(()=>document.querySelector('.today')?.textContent)
+      return q})()
+    await p.goto(`${S}/dnevni`,{waitUntil:'networkidle0'}); await pause(400)
+    const link=await p.$eval('.btn--go',e=>e.getAttribute('href'))
+    const played=link.split('/')[1]
+    await p.evaluate((t,d)=>localStorage.setItem('tablice.history',JSON.stringify([
+      {id:'daily',app:'tablice',topic:t,seed:d,length:10,easy:false,kim:false,timed:false,
+       score:7,ms:9000,at:Date.now(),answers:Array.from({length:10},(_,i)=>
+         ({code:'NS',picked:i<7?'NS':'BG',correct:i<7,ms:900}))}])), played, day)
+    await p.goto(`${S}/dnevni`,{waitUntil:'networkidle0'}); await pause(400)
+    const after=await p.evaluate(()=>({score:document.querySelector('.daily__points')?.textContent?.trim(),
+      play:!!document.querySelector('.btn--go')}))
+    check('once played, today shows the score instead of another go',
+      after.score==='7 / 10' && !after.play, `${after.score}, play button ${after.play}`)
+    void topic
+    await ctx.close()
+  }
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await shutdown()
 process.exit(fails ? 1 : 0)

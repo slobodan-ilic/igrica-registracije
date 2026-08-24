@@ -39,6 +39,7 @@ export type Round = {
 export type Route =
   | { name: 'home' }
   | { name: 'progress' }
+  | { name: 'daily' }
   | { name: 'setup'; topic: string }
   | ({ name: 'game'; topic: string } & Round)
 
@@ -74,12 +75,15 @@ const round = (search: string): Round => {
 }
 
 /** Paths that are the app's own, and so can never be a topic. */
-const RESERVED = new Set(['napredak'])
+const RESERVED: Record<string, Route> = {
+  napredak: { name: 'progress' },
+  dnevni: { name: 'daily' },
+}
 
 export function parseRoute(pathname: string, search: string): Route {
   const [topic, section] = pathname.split('/').filter(Boolean)
 
-  if (topic && RESERVED.has(topic)) return { name: 'progress' }
+  if (topic && topic in RESERVED) return RESERVED[topic]
 
   if (root) {
     if (!topic) return { name: 'setup', topic: root }
@@ -100,6 +104,7 @@ const query = ({ length, seed, easy, kim, timed }: Round) =>
 export const href = {
   home: () => '/',
   progress: () => '/napredak',
+  daily: () => '/dnevni',
   setup: (topic: string) => `/${topic}`,
   game: (topic: string, r: Round) => `/${topic}/igra?${query(r)}`,
 }
@@ -110,7 +115,7 @@ export const href = {
  * bar is always something worth copying.
  */
 export function canonical(route: Route): string | null {
-  if (route.name === 'home' || route.name === 'progress') return null
+  if (route.name === 'home' || route.name === 'progress' || route.name === 'daily') return null
   if (route.name === 'game') {
     return route.length > 0 && route.seed
       ? href.game(route.topic, route)

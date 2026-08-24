@@ -442,3 +442,69 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* ---------- the daily challenge ---------- */
+
+/* The number is the headline, so it gets the size the question usually has. */
+.daily .intro__title { font-variant-numeric: tabular-nums; }
+
+.daily__score {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-self: flex-start;
+  padding: 14px 20px;
+  border: 1px solid var(--ok-border);
+  border-radius: 12px;
+  background: var(--ok-soft);
+}
+
+.daily__points {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ok-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.daily__said { color: var(--muted); font-size: 13px; }
+
+/* The way in, sitting above the play button rather than below it: today's is
+   the thing to do first, and the country you were last on is the fallback. */
+/* A line of its own above the play button. Inline-flex would flow it alongside
+   — .menu__say is a block on wide screens — and two pills side by side read as
+   two equal buttons rather than a link above the thing to press. */
+.today {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 9px;
+  align-self: flex-start;
+  margin: 0 0 14px;
+  padding: 8px 14px 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.today:hover { border-color: var(--accent); }
+.today b { color: var(--accent); }
+
+.today__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+@media (max-width: 880px) {
+  .daily__score, .today { align-self: center; }
+  /* Block context on the daily screen, flex on the folded menu — margin centres
+     it in the first, align-self in the second. */
+  .today { margin-inline: auto; }
+  .menu .today { order: 4; }
+}

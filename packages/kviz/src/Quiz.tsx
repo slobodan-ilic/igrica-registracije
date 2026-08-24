@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { geoCentroid } from 'd3-geo'
+import { Daily } from './Daily'
 import { Progress } from './Progress'
 import { Setup, type Length } from './Setup'
 import { Game } from './Game'
@@ -63,12 +64,13 @@ export function Quiz({ topics, home, title, siblingsLabel, elsewhere }: QuizProp
     [],
   )
 
-  const topicId = route.name === 'home' || route.name === 'progress' ? null : route.topic
+  const topicId = route.name === 'home' || route.name === 'progress' || route.name === 'daily' ? null : route.topic
   const topic = topicId && topicId in topics ? topics[topicId] : null
 
   // An unknown topic in the URL is a dead end; send it home.
   useEffect(() => {
-    if (route.name !== 'home' && route.name !== 'progress' && !topic) navigate(href.home(), true)
+    if (!('topic' in route) && route.name !== 'home') return
+    if (route.name !== 'home' && !topic) navigate(href.home(), true)
   }, [route, topic])
 
   useEffect(() => {
@@ -138,6 +140,15 @@ export function Quiz({ topics, home, title, siblingsLabel, elsewhere }: QuizProp
   const corner = (
     <Corner theme={theme} onTheme={setTheme} account={account} />
   )
+
+  if (route.name === 'daily') {
+    return (
+      <main className="shell shell--scroll">
+        {corner}
+        <Daily topics={topics} />
+      </main>
+    )
+  }
 
   if (route.name === 'progress') {
     return (
