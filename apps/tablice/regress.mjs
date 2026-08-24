@@ -602,6 +602,103 @@ if (process.env.URL) {
     Object.values(pages).every(h=>/src="\/assets\/[^"]+\.js"/.test(h)))
 }
 
+// the shared result: what goes out must say how it went and give away nothing
+if (!process.env.URL) {
+  const ctx=await b.createBrowserContext()
+  await ctx.overridePermissions(S,['clipboard-read','clipboard-write'])
+  const p=await ctx.newPage(); await p.setViewport({width:1440,height:900})
+
+  // What was copied, caught where it is copied. Headless Chrome will not hand
+  // back the real clipboard unless the document has focus, and it does not
+  // when other pages are open — so both routes out are wrapped instead, which
+  // records the text whichever one the browser takes.
+  await p.evaluateOnNewDocument(()=>{
+    window.__copied=null
+    const real=document.execCommand.bind(document)
+    document.execCommand=(cmd,...rest)=>{
+      if(cmd==='copy'){const el=document.activeElement
+        if(el&&'value' in el) window.__copied=el.value}
+      return real(cmd,...rest)
+    }
+    const write=navigator.clipboard?.writeText?.bind(navigator.clipboard)
+    if(write) navigator.clipboard.writeText=async t=>{window.__copied=t; return write(t)}
+  })
+
+  const feats=JSON.parse(readFileSync('data/crnagora.json','utf8')).features.map(f=>f.properties)
+  const play=async url=>{
+    await p.goto(`${S}${url}`,{waitUntil:'networkidle0'}); await pause(700)
+    for(;;){
+      const asked=await p.evaluate(()=>document.querySelector('.plate__code')?.textContent)
+      if(!asked) break
+      const code=feats.find(f=>f.code===asked).code
+      // answer the first right and the rest wrong, so the grid has both marks
+      const target=await p.evaluate(()=>document.querySelectorAll('.intro__eyebrow').length)
+      void target
+      const pick=await p.evaluate(c=>{
+        const wrong=[...document.querySelectorAll('[data-code]')].find(e=>e.getAttribute('data-code')!==c)
+        const el=document.querySelector(`[data-code="${c}"]`)
+        const use=(window.__n=(window.__n??0)+1)===1? el : wrong
+        const r=use.getBoundingClientRect()
+        for(let fy=0.25;fy<0.85;fy+=0.06)for(let fx=0.25;fx<0.85;fx+=0.06){
+          const x=r.x+r.width*fx,y=r.y+r.height*fy
+          if(document.elementFromPoint(x,y)?.closest('[data-code]')===use)return{x,y}}
+        return {x:r.x+r.width/2,y:r.y+r.height/2}},code)
+      await p.mouse.click(pick.x,pick.y); await pause(1100)
+      // A wrong answer waits to be read rather than moving on by itself, so the
+      // round only advances when its "Dalje" is pressed. Without this the loop
+      // clicks a map that has stopped listening, forever.
+      const on=await p.$('.quiz .btn--sm')
+      if(on){ await on.click(); await pause(500) }
+    }
+    await pause(600)
+  }
+
+  // an ordinary round, on a seed that is not a date
+  await play('/crnagora/igra?n=3&s=deljenje')
+  const offered=(await p.$$('.btn--share')).length===1
+  check('the summary offers a way to send the result', offered,
+    offered? '' : 'no share control on the end-of-round screen')
+
+  if (offered) {
+  await p.click('.btn--share'); await pause(400)
+  const copied=await p.evaluate(()=>window.__copied ?? '')
+  check('pressing it copies, and says it did',
+    (await p.$eval('.btn--share',e=>e.textContent))==='Kopirano',
+    await p.$eval('.btn--share',e=>e.textContent))
+
+  const lines=copied.split('\n')
+  check('it names the quiz and the score', /^Tablice · Crna Gora · \d\/3/.test(lines[0]), lines[0])
+  check('one mark per question, in order',
+    [...lines.slice(1,-1).join('')].filter(c=>c==='🟩'||c==='⬛').length===3 &&
+    lines.slice(1,-1).join('').startsWith('🟩⬛'), JSON.stringify(lines.slice(1,-1)))
+  check('and a way back to the app', lines[lines.length-1]==='tablice.vercel.app', lines[lines.length-1])
+  check('an ordinary round claims no challenge number', !/#\d/.test(copied), copied.split('\n')[0])
+
+  // nothing in it gives an answer away
+  const round=await p.evaluate(()=>JSON.parse(localStorage.getItem('tablice.history'))[0])
+  const secrets=[...new Set(round.answers.flatMap(a=>[a.code,a.picked]))]
+  const names=feats.filter(f=>secrets.includes(f.code)).map(f=>f.name)
+  const leaked=[...secrets.filter(c=>copied.includes(c)),
+                ...names.filter(n=>copied.toLowerCase().includes(n.toLowerCase()))]
+  check('and none of it gives an answer away', leaked.length===0,
+    leaked.length? `leaked ${leaked.join(', ')}` : `${secrets.length} codes and ${names.length} names checked`)
+
+  // the daily wears its number
+  const day=await p.evaluate(()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Belgrade'}).format(new Date()))
+  await p.goto(`${S}/dnevni`,{waitUntil:'networkidle0'}); await pause(400)
+  const link=await p.$eval('.btn--go',e=>e.getAttribute('href'))
+  await p.evaluate(()=>{window.__n=0; localStorage.removeItem('tablice.history')})
+  const daily=JSON.parse(readFileSync(`data/${link.split('/')[1]}.json`,'utf8')).features.map(f=>f.properties)
+  feats.length=0; feats.push(...daily)
+  await play(link.replace(/n=\d+/,'n=2'))
+  await p.click('.btn--share'); await pause(400)
+  const shared=await p.evaluate(()=>window.__copied ?? '')
+  check('the daily wears its number', /^Tablice #\d+ · \d\/2/.test(shared), shared.split('\n')[0])
+  void day
+  }
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await shutdown()
 process.exit(fails ? 1 : 0)

@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { QuizMap } from './QuizMap'
 import { BackLink, Stat, Streak, ThemeToggle } from './Chrome'
 import { ContactSheet, Photo } from './Photo'
 import { hasChooser, href, linkProps, navigate, type Round } from './router'
 import { joinSr } from './deck'
 import { randomSeed } from './deck'
-import { record, sync } from './history'
+import { record, sync, type Played } from './history'
+import { numberOf } from './challenge'
+import { send, shareText } from './share'
 import { budget, CHOICES, useRound } from './useRound'
 import type { Theme } from './prefs'
 import type { Topic, TopicData } from './topic'
@@ -18,11 +20,51 @@ type Props = {
   byCode: Map<string, RegionProps>
   centroids: Map<string, [number, number]>
   playable: Set<string>
+  /** Every topic this app has, so a finished round can tell whether it was the
+   *  day's challenge — which decides whether the shared result wears a number. */
+  topics: string[]
   /** What round this is: how long, dealt from which seed, played how. */
   round: Round
   touch: boolean
   theme: Theme
   onTheme: (t: Theme) => void
+}
+
+/**
+ * Sends the result. Its own component because it holds a moment of state — what
+ * just happened when you pressed it — and the summary around it should not
+ * re-render for that.
+ */
+function Share({
+  round,
+  label,
+  topics,
+}: {
+  round: Played
+  label: string
+  topics: string[]
+}) {
+  const [said, setSaid] = useState<string | null>(null)
+
+  const text = shareText(round, {
+    label,
+    daily: numberOf(topics, round),
+    site: 'tablice.vercel.app',
+  })
+
+  return (
+    <button
+      className="btn btn--share"
+      data-share={text}
+      onClick={async () => {
+        const how = await send(text)
+        setSaid(how === 'failed' ? 'Nije uspelo' : how === 'shared' ? 'Poslato' : 'Kopirano')
+        window.setTimeout(() => setSaid(null), 2200)
+      }}
+    >
+      {said ?? 'Podeli rezultat'}
+    </button>
+  )
 }
 
 /** 3:07, or 47s when it never reaches a minute. */
@@ -45,11 +87,15 @@ export function Game(props: Props) {
   // Kept the moment it is over, and only then: an abandoned round is not a
   // result. The guard is because `done` stays true while the summary is on
   // screen, and this must happen once rather than on every render of it.
+  // Kept so the share button has something to describe, and so pressing it
+  // twice sends the same thing rather than a second, slightly different round.
+  const [played, setPlayed] = useState<Played | null>(null)
+
   const kept = useRef(false)
   useEffect(() => {
     if (!round.done || kept.current) return
     kept.current = true
-    record({
+    setPlayed(record({
       topic: topic.id,
       seed,
       length,
@@ -59,7 +105,7 @@ export function Game(props: Props) {
       score: round.score,
       ms: round.answers.reduce((t, a) => t + a.ms, 0),
       answers: round.answers,
-    })
+    }))
     // Signed out this is refused and quietly does nothing, which is the point.
     void sync()
   }, [round.done, round.answers, round.score, topic.id, seed, length, easy, timed, props.round.kim])
@@ -112,6 +158,7 @@ export function Game(props: Props) {
         />
 
         <div className="intro__actions">
+          {played && <Share round={played} label={topic.label} topics={props.topics} />}
           <button className="btn" onClick={again}>
             Igraj ponovo
           </button>

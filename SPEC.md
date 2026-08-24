@@ -21,7 +21,7 @@ plates to Yugoslavia's as they stood in 1985.
 
 These seven lines are the acceptance criteria. Not a feature list — a
 description of the experience when it works. Each is either true today or it is
-not, and the ones that are not are the work that remains. **Three of seven hold.**
+not, and the ones that are not are the work that remains. **Four of seven hold.**
 
 | | | |
 | --- | --- | --- |
@@ -31,13 +31,13 @@ not, and the ones that are not are the work that remains. **Three of seven hold.
 | ✓ | **They can see they are improving.** | Accuracy over time and per country, kept per device and synced to an account. |
 | — | **They can practise exactly what they are bad at.** | The data exists — the confusion pairs — but nothing acts on it yet. |
 | — | **They can compare themselves to others, fairly.** | Needs comparable rounds before it needs a table. See section 4. |
-| — | **They can share a result without spoiling it.** | A shared link now previews as the country's plate; what is missing is the result grid to put beside it. |
+| ✓ | **They can share a result without spoiling it.** | A grid of squares, the score and a link — no code and no place name anywhere in it. |
 
 ---
 
 ## 2 · The record — what is built
 
-Forty commits between 14 and 24 August 2026, in seven areas. Everything
+Forty-one commits between 14 and 24 August 2026, in eight areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -114,6 +114,23 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   the first attempt produced: its own and the template's, with the choice left
   to whichever crawler read it.
 
+### Sending it on · shipped 24 Aug
+
+- The end of a round offers the result as text you can paste: the score, one
+  square per question in the order they were asked, and a link back.
+- Nothing in it gives an answer away — no code, no place name. A line naming
+  what you missed would feel like a kindness and would ruin the day's challenge
+  for whoever read it, so the check asserts the *absence* of every code and name
+  from that round.
+- Green against black rather than green against red, since these squares carry
+  no label to fall back on and red against green is the one pairing that
+  collapses for the six percent of men who cannot separate them.
+- The daily wears its number; an ordinary round does not, or the first person to
+  compare two of them finds the number means nothing.
+- The share sheet on a phone, the clipboard everywhere else — and a fallback to
+  the old copy command, because Safari, any page not on https, and any browser
+  with the permission denied all refuse the modern one.
+
 ### Underneath · shipped 17–24 Aug
 
 - Two apps over one shared engine, deployed as separate projects from one
@@ -122,34 +139,19 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 73 browser checks across the two apps, each written to fail before it was made
-  to pass — the daily's seven and the preview's five were watched failing with
-  the feature removed.
+- 81 browser checks across the two apps, each written to fail before it was made
+  to pass — the daily's, the preview's and the share's were each watched failing
+  with the feature removed.
 
 ---
 
 ## 3 · Outstanding — what still needs doing
 
-Four pieces of work, in the order they have to happen. Each exists because the
+Three pieces of work, in the order they have to happen. Each exists because the
 next one needs it. Built out of order most land in an empty room: a leaderboard
 with three names on it advertises that nobody is here.
 
-### 1. Shareable result — **next**
-
-A compact grid that gives away the score and none of the answers, so posting it
-is an invitation rather than a spoiler.
-
-```
-Tablice #142 · 8/10 · 1:47
-▪▪▫▪▪ ▫▪▪▪▪
-tablice.vercel.app
-```
-
-- **Unlocks** people arriving without being told
-- **Depends on** nothing further — the daily and the preview picture are both in place
-- **Touches** the end-of-round screen in `Game.tsx`, clipboard, share sheet
-
-### 2. Practise your mistakes — **after**
+### 1. Practise your mistakes — **next**
 
 A round dealt entirely from the codes you keep getting wrong. This is what turns
 a toy into a study tool, and nothing else on the web can copy it — every answer
@@ -159,7 +161,7 @@ here already records *what you picked*.
 - **Depends on** nothing — the confusion pairs are already recorded
 - **Touches** `deck.ts`, `stats.ts`, one new round type
 
-### 3. Code pages — **after**
+### 2. Code pages — **after**
 
 One page per code — 310 of them — answering the question people actually type
 into a search box, with the map beside it and a way into the quiz. A doorway,
@@ -169,9 +171,9 @@ never a tool inside the game.
 - **Depends on** nothing
 - **Touches** 310 static routes, the map component, a sitemap
 
-### 4. Leaderboards — **last**
+### 3. Leaderboards — **last**
 
-Deliberately last. It needs people, which items 1 and 3 bring. The
+Deliberately last. It needs people, which item 2 brings. The
 comparable round it ranks already exists — the daily. Shipped today it would be
 an empty table with one name on it three times.
 

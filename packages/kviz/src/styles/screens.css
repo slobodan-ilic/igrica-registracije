@@ -508,3 +508,13 @@
   .today { margin-inline: auto; }
   .menu .today { order: 4; }
 }
+
+/* The one action on the summary worth reaching for first. */
+.btn--share {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+.btn--share:hover { border-color: transparent; filter: brightness(1.08); }

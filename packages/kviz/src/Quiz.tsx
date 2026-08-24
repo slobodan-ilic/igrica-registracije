@@ -191,6 +191,7 @@ export function Quiz({ topics, home, title, siblingsLabel, elsewhere }: QuizProp
           byCode={byCode}
           centroids={centroids}
           playable={playable}
+          topics={Object.keys(topics)}
           round={settings}
           touch={touch}
           theme={theme}
