@@ -10,6 +10,10 @@ Two map quizzes about Serbia, sharing one engine.
 They are separate apps with separate domains, but not separate codebases:
 about 85% of the code is the same in both, and it is shared rather than copied.
 
+[SPEC.md](SPEC.md) says what the plate quiz must do to be finished, what is
+already built, and what is deliberately left out. [CLAUDE.md](CLAUDE.md) is the
+short version for anyone — or anything — picking the work up.
+
 ```
 packages/
   kviz/        the engine: map rendering, gestures, scoring, photographs,
