@@ -404,43 +404,39 @@
 
 /* ---------- the other app ---------- */
 
-/* Quiet, and at the foot of the page: it is worth knowing about and worth
-   nobody's attention until they have finished with this one. */
+/* Small type at the foot of the page — where a site puts what is worth knowing
+   and not worth interrupting for. A card here gave a sideways link the same
+   weight as the game itself. */
 .elsewhere {
   width: 100%;
   max-width: 940px;
-  margin: 30px auto 8px;
+  margin: 34px auto 0;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+  text-align: center;
 }
+
+.elsewhere__also { color: var(--muted); }
 
 .elsewhere__link {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--card);
-  color: var(--text);
-  text-align: left;
+  color: var(--accent);
+  font-weight: 600;
   text-decoration: none;
-  transition: border-color 140ms ease;
+  white-space: nowrap;
 }
 
-.elsewhere__link:hover { border-color: var(--accent); }
+.elsewhere__link:hover { text-decoration: underline; }
 
-.elsewhere__text { display: flex; flex: 1; flex-direction: column; gap: 2px; }
-.elsewhere__label { font-size: 14.5px; font-weight: 700; }
-.elsewhere__blurb { color: var(--muted); font-size: 13px; line-height: 1.4; }
+/* On one line beside the link where there is room, on its own below where
+   there is not. */
+.elsewhere__blurb::before { content: ' · '; }
 
-.elsewhere__arrow {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+@media (max-width: 560px) {
+  .elsewhere__blurb { display: block; }
+  .elsewhere__blurb::before { content: none; }
 }
 
 /* ---------- the daily challenge ---------- */

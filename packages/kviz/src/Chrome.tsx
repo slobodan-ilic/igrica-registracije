@@ -142,10 +142,13 @@ function AccountChip({
 }
 
 /**
- * The other app. They are separate games at separate addresses, but they share
- * an engine, a look and an author, and someone who likes one is the likeliest
- * person to want the other — so each says the other exists, once, quietly, at
- * the bottom of its front page.
+ * The other app, in the footer.
+ *
+ * They are separate games at separate addresses but share an engine, a look and
+ * an author, and whoever likes one is the likeliest person to want the other —
+ * so each says the other exists. Once, in small type, at the foot of the page,
+ * where a site says the things worth knowing and not worth interrupting for.
+ * It was a card before, which gave a sideways link the weight of the game.
  *
  * A plain anchor rather than the app's own link handling: this one really does
  * leave, and the router here knows nothing about the other app's routes.
@@ -154,16 +157,12 @@ export type Elsewhere = { href: string; label: string; blurb: string }
 
 export function OtherApp({ to }: { to: Elsewhere }) {
   return (
-    <aside className="elsewhere">
+    <footer className="elsewhere">
+      <span className="elsewhere__also">Još jedna igra:</span>{' '}
       <a className="elsewhere__link" href={to.href}>
-        <span className="elsewhere__text">
-          <b className="elsewhere__label">{to.label}</b>
-          <span className="elsewhere__blurb">{to.blurb}</span>
-        </span>
-        <svg className="elsewhere__arrow" viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" />
-        </svg>
+        {to.label} <span aria-hidden="true">→</span>
       </a>
-    </aside>
+      <span className="elsewhere__blurb">{to.blurb}</span>
+    </footer>
   )
 }

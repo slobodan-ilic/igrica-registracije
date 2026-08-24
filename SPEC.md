@@ -6,8 +6,9 @@ built, and what is left.
 Rendered and shareable: [claude.ai/code/artifact/ab9911f1](https://claude.ai/code/artifact/ab9911f1-f66d-441c-8d90-0aa61d59bd06)
 
 > **Reading this.** Section 2 is drawn from the repository's history and is
-> accurate to 24 August 2026. Sections 1, 3 and 4 are a proposal and are meant
-> to be argued with. Three statuses are used and they mean what they say:
+> accurate to 24 August 2026, and section 4 lists things checked and found
+> wanting on that date. Sections 1, 3 and 5 are a proposal and are meant to be
+> argued with. Three statuses are used and they mean what they say:
 > **Shipped** is live and checked, **Next** is agreed and not started, **After**
 > and **Last** are sequenced by what they depend on rather than by preference.
 
@@ -134,7 +135,8 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 ### Underneath · shipped 17–24 Aug
 
 - Two apps over one shared engine, deployed as separate projects from one
-  repository.
+  repository, each naming the other in a line of small type at the foot of the
+  page.
 - A round is its URL: dealt from a seed, so the same link is the same questions
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
@@ -183,7 +185,63 @@ an empty table with one name on it three times.
 
 ---
 
-## 4 · Ranking
+## 4 · Rough edges
+
+Things that work but are wrong, or that were left half-done and have stayed
+that way. Not features — none of these would appear on a list of what the app
+lacks, and every one of them is visible to somebody using it. Fix them between
+the numbered items rather than after them.
+
+### The progress page has nothing to say to a newcomer
+
+`/napredak` with nothing played is a heading, a sentence and a button in an
+otherwise empty screen, and it never mentions that signing in is what carries
+progress between devices. Someone arriving from the menu link learns nothing
+and leaves.
+
+**Open question, and it is a product decision rather than a bug.** Progress is
+local first by design — it is kept in the browser whether or not anyone signs
+in, so a child on a borrowed iPad gets their history without meeting a login.
+"It shouldn't work if you're not logged in" would reverse that. There are two
+readings and they lead to different apps:
+
+- *the empty page should sell the account* — keep local-first, and make the
+  empty state say what an account adds
+- *the page should require an account* — progress becomes a reason to sign in
+  rather than something you already have
+
+The first is what is built and what section 1 assumes. The second is a
+deliberate change worth making on purpose if that is the intent.
+
+### The daily challenge previews as Serbia whatever country it is
+
+`/dnevni` walks the six countries, but its link preview always shows Serbia's
+plate, because the picture is chosen when the page is built and the country
+changes daily. A shared daily therefore advertises the wrong quiz five days in
+six.
+
+### The geography app's progress can never leave the browser
+
+It has the same progress page and the same account code, and no Google client
+id — so its sign-in button never appears and its rounds are stranded on one
+device. Either connect it to the same account, or say on the page that this one
+is local only.
+
+### A topic is promised that does not exist
+
+The geography app's home still offers "Nacionalni parkovi" with an *Uskoro*
+badge. It has said that since the first week. Build it or take it down.
+
+### Kosovo and the clock are recorded but never separated
+
+Easy rounds are counted apart from the whole map, for good reason. Rounds with
+Kosovo switched on and rounds against the clock are recorded the same way and
+then averaged together with the rest. The clock especially: accuracy under time
+pressure is a different number, and mixing them quietly flatters neither.
+
+---
+
+## 5 · Ranking
 
 ### What can honestly be compared
 
@@ -223,7 +281,7 @@ play under something else — or to stay off the boards entirely.
 
 ---
 
-## 5 · Later — worth doing, not worth waiting for
+## 6 · Later — worth doing, not worth waiting for
 
 - **More countries with regional codes.** Austria, Hungary, Bulgaria, Romania
   and Greece all have them. Germany is the monster — around 700 codes — and
@@ -238,7 +296,7 @@ play under something else — or to stay off the boards entirely.
 
 ---
 
-## 6 · Out of scope
+## 7 · Out of scope
 
 - **Lookup inside the game.** Typing two letters to be told the answer is the
   opposite of the exercise. It belongs on the code pages, where it brings people
