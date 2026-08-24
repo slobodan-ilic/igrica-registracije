@@ -31,13 +31,13 @@ not, and the ones that are not are the work that remains. **Three of seven hold.
 | ✓ | **They can see they are improving.** | Accuracy over time and per country, kept per device and synced to an account. |
 | — | **They can practise exactly what they are bad at.** | The data exists — the confusion pairs — but nothing acts on it yet. |
 | — | **They can compare themselves to others, fairly.** | Needs comparable rounds before it needs a table. See section 4. |
-| — | **They can share a result without spoiling it.** | A shared link is currently a grey box with no picture. |
+| — | **They can share a result without spoiling it.** | A shared link now previews as the country's plate; what is missing is the result grid to put beside it. |
 
 ---
 
 ## 2 · The record — what is built
 
-Thirty-nine commits between 14 and 24 August 2026, in six areas. Everything
+Forty commits between 14 and 24 August 2026, in seven areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -101,6 +101,19 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 - Ten questions, whole map, no clock — the one shape a board can rank.
 - Played once: come back the same day and it shows your score, not another go.
 
+### Travelling · shipped 24 Aug
+
+- A link to any country, to `/dnevni` or to `/napredak` previews as that
+  country's plate — drawn on demand by a function under `api/`, 1200×630, with
+  the real coat of arms on it.
+- The tags are written into each route's own HTML at build time rather than set
+  by React, because the crawlers that draw previews do not run JavaScript.
+  Everyone is served the same HTML, crawler and browser alike — no sniffing the
+  user agent, no showing Facebook something a person would not see.
+- The build refuses to ship a page carrying two `og:image` tags, which is what
+  the first attempt produced: its own and the template's, with the choice left
+  to whichever crawler read it.
+
 ### Underneath · shipped 17–24 Aug
 
 - Two apps over one shared engine, deployed as separate projects from one
@@ -109,27 +122,19 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 68 browser checks across the two apps, each written to fail before it was made
-  to pass — the daily's seven were watched failing with the feature removed.
+- 73 browser checks across the two apps, each written to fail before it was made
+  to pass — the daily's seven and the preview's five were watched failing with
+  the feature removed.
 
 ---
 
 ## 3 · Outstanding — what still needs doing
 
-Five pieces of work, in the order they have to happen. Each exists because the
+Four pieces of work, in the order they have to happen. Each exists because the
 next one needs it. Built out of order most land in an empty room: a leaderboard
 with three names on it advertises that nobody is here.
 
-### 1. Link previews — **next**
-
-A shared link should show the plate, not a grey rectangle. One serverless
-function rendering an image per topic and per daily round.
-
-- **Unlocks** every share below being worth making
-- **Depends on** nothing
-- **Touches** a new function under `api/`, meta tags per route
-
-### 2. Shareable result — **next**
+### 1. Shareable result — **next**
 
 A compact grid that gives away the score and none of the answers, so posting it
 is an invitation rather than a spoiler.
@@ -141,10 +146,10 @@ tablice.vercel.app
 ```
 
 - **Unlocks** people arriving without being told
-- **Depends on** the daily challenge
+- **Depends on** nothing further — the daily and the preview picture are both in place
 - **Touches** the end-of-round screen in `Game.tsx`, clipboard, share sheet
 
-### 3. Practise your mistakes — **after**
+### 2. Practise your mistakes — **after**
 
 A round dealt entirely from the codes you keep getting wrong. This is what turns
 a toy into a study tool, and nothing else on the web can copy it — every answer
@@ -154,7 +159,7 @@ here already records *what you picked*.
 - **Depends on** nothing — the confusion pairs are already recorded
 - **Touches** `deck.ts`, `stats.ts`, one new round type
 
-### 4. Code pages — **after**
+### 3. Code pages — **after**
 
 One page per code — 310 of them — answering the question people actually type
 into a search box, with the map beside it and a way into the quiz. A doorway,
@@ -164,9 +169,9 @@ never a tool inside the game.
 - **Depends on** nothing
 - **Touches** 310 static routes, the map component, a sitemap
 
-### 5. Leaderboards — **last**
+### 4. Leaderboards — **last**
 
-Deliberately last. It needs people, which items 1, 2 and 4 bring. The
+Deliberately last. It needs people, which items 1 and 3 bring. The
 comparable round it ranks already exists — the daily. Shipped today it would be
 an empty table with one name on it three times.
 

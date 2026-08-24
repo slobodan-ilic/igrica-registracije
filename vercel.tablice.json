@@ -5,6 +5,10 @@
   "outputDirectory": "apps/tablice/dist",
   "rewrites": [
     {
+      "source": "/:route(srbija|hrvatska|makedonija|crnagora|slovenija|jugoslavija|dnevni|napredak)",
+      "destination": "/:route.html"
+    },
+    {
       "source": "/((?!api/|_vercel/).*)",
       "destination": "/index.html"
     }

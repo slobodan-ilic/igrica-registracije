@@ -561,6 +561,47 @@ if (!process.env.URL) {
   }
 }
 
+// a shared link previews as the plate. This one is checked against the served
+// HTML rather than the rendered page, because the crawlers that draw previews
+// do not run JavaScript — whatever React sets afterwards they never see.
+if (process.env.URL) {
+  const raw=async path=>{
+    const r=await fetch(`${S}${path}`,{headers:{'user-agent':'facebookexternalhit/1.1'}})
+    return r.ok? await r.text() : ''
+  }
+  // Tolerant of how the tag is written — attributes in either order, wrapped
+  // across lines or not. A check that depends on formatting fails for the wrong
+  // reason later, which is worse than not checking.
+  const meta=(html,prop)=>html.match(new RegExp(`<meta[^>]*(?:property|name)="${prop}"[^>]*>`,'g'))??[]
+  const tag=(html,prop)=>meta(html,prop)[0]?.match(/content="([^"]*)"/)?.[1] ?? null
+  const count=(html,prop)=>meta(html,prop).length
+
+  const pages={}
+  for (const r of ['srbija','hrvatska','jugoslavija','dnevni']) pages[r]=await raw(`/${r}`)
+
+  check('every route serves preview tags without JavaScript',
+    Object.values(pages).every(h=>tag(h,'og:image') && tag(h,'og:title') && tag(h,'og:description')),
+    Object.entries(pages).map(([r,h])=>`${r}:${tag(h,'og:image')?'y':'n'}`).join(' '))
+
+  const titles=new Set(Object.values(pages).map(h=>tag(h,'og:title')))
+  const images=new Set(Object.values(pages).map(h=>tag(h,'og:image')))
+  check('and each route says something of its own', titles.size===4 && images.size>=3,
+    `${titles.size} titles, ${images.size} images`)
+
+  check('with exactly one of each tag, not two',
+    Object.values(pages).every(h=>count(h,'og:image')===1 && count(h,'og:title')===1),
+    Object.entries(pages).map(([r,h])=>`${r}:${count(h,'og:image')}`).join(' '))
+
+  const shot=await fetch(`${S}/api/og?t=hrvatska`)
+  const bytes=(await shot.arrayBuffer()).byteLength
+  check('the picture is a real PNG',
+    shot.headers.get('content-type')==='image/png' && bytes>10_000,
+    `${shot.headers.get('content-type')}, ${(bytes/1024).toFixed(0)}KB`)
+
+  check('and a browser still gets the app on those routes',
+    Object.values(pages).every(h=>/src="\/assets\/[^"]+\.js"/.test(h)))
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await shutdown()
 process.exit(fails ? 1 : 0)

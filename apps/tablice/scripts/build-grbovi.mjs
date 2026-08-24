@@ -88,11 +88,17 @@ for (const [code, file] of Object.entries(ALL)) {
 
   // Trimmed of its surrounding transparency, so every arms fills its box the
   // same way whatever padding the original was drawn with.
-  await sharp(src, { density })
+  const drawn = sharp(src, { density })
     .trim()
     .resize({ height: HEIGHT, fit: 'inside', withoutEnlargement: false })
-    .webp({ quality: 90, alphaQuality: 100 })
-    .toFile(resolve(dir, `${code}.webp`))
+
+  await drawn.clone().webp({ quality: 90, alphaQuality: 100 }).toFile(resolve(dir, `${code}.webp`))
+
+  // A PNG beside it for the link preview, which is drawn by a renderer that
+  // reads PNG and JPEG and quietly skips anything else. The app itself keeps
+  // using the webp, which is a third of the size.
+  await drawn.clone().png({ compressionLevel: 9 }).toFile(resolve(dir, `${code}.png`))
+
   console.log(`    ${code}  ${meta.licence.padEnd(15)} ${file}`)
 }
 

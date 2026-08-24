@@ -36,6 +36,7 @@
   ],
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "@vercel/og": "^1.0.1",
     "jose": "^6.2.9"
   }
 }

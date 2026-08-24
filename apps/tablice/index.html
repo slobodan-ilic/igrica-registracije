@@ -11,9 +11,24 @@
     <meta name="theme-color" content="#131519" media="(prefers-color-scheme: dark)" />
     <meta
       name="description"
-      content="Kviz za učenje registarskih oznaka u Srbiji — pogodite kojem području pripada tablica."
+      content="Pogodi kojem području pripada oznaka sa tablice. Šest zemalja, 310 oznaka, od Srbije do stare Jugoslavije."
     />
     <title>Registarske oznake · kviz</title>
+    <!-- What a shared link shows. Every country and /dnevni get their own, written
+         into their own HTML at build time by scripts/build-pages.mjs — a crawler
+         does not run JavaScript, so React setting them later is invisible to it. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tablice.vercel.app/" />
+    <meta property="og:title" content="Registarske oznake · kviz" />
+    <meta
+      property="og:description"
+      content="Pogodi kojem području pripada oznaka sa tablice. Šest zemalja, 310 oznaka, od Srbije do stare Jugoslavije."
+    />
+    <meta property="og:image" content="https://tablice.vercel.app/api/og?t=srbija" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://tablice.vercel.app/api/og?t=srbija" />
     <script>
       // Applied before render so a remembered dark theme never flashes light.
       try {
