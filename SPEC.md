@@ -38,7 +38,7 @@ not, and the ones that are not are the work that remains. **Four of seven hold.*
 
 ## 2 · The record — what is built
 
-Forty-one commits between 14 and 24 August 2026, in eight areas. Everything
+Forty-three commits between 14 and 24 August 2026, in eight areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -150,7 +150,7 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 81 browser checks across the two apps, each written to fail before it was made
+- 88 browser checks across the two apps, each written to fail before it was made
   to pass — the daily's, the preview's and the share's were each watched failing
   with the feature removed.
 
