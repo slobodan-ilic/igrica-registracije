@@ -52,7 +52,7 @@ export function Share({ round, label, site }: { round: Played; label: string; si
   const [said, setSaid] = useState<string | null>(null)
 
   const daily = numberOf(round)
-  const link = shareLink(round, { daily, site })
+  const link = shareLink(round, { site })
   const text = shareText(round, { label, daily, link })
   const title = titleOf(round, { label, daily })
 

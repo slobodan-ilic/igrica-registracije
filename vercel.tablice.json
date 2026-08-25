@@ -5,11 +5,15 @@
   "outputDirectory": "apps/tablice/dist",
   "rewrites": [
     {
+      "source": "/r/:topic",
+      "destination": "/api/share?t=:topic"
+    },
+    {
       "source": "/:route(srbija|hrvatska|makedonija|crnagora|slovenija|jugoslavija|dnevni|napredak)",
       "destination": "/:route.html"
     },
     {
-      "source": "/((?!api/|_vercel/).*)",
+      "source": "/((?!api/|_vercel/|r/).*)",
       "destination": "/index.html"
     }
   ]

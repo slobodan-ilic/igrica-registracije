@@ -685,23 +685,16 @@ if (!process.env.URL) {
   check('one mark per question, in order',
     [...lines.slice(1,-1).join('')].filter(c=>c==='🟩'||c==='⬛').length===3 &&
     lines.slice(1,-1).join('').startsWith('🟩⬛'), JSON.stringify(lines.slice(1,-1)))
+  // The link is a result's own address, not the bare host it used to be and not
+  // the round's own address either: a round's address previews as the country's
+  // plate, the same picture for a perfect ten and a miserable two. What that
+  // address then serves is checked against a deployment, where it exists.
   const back=lines[lines.length-1]
-  check('and a link to the round that was played, not to the front page',
-    /\/crnagora\/igra\?/.test(back) && /s=deljenje/.test(back) && /^https?:\/\//.test(back), back)
-  // Opened rather than fetched. A bare host fetches perfectly well from inside
-  // the app — it resolves against the dev server and comes back as the page
-  // shell — so asking whether it responds is a question every wrong answer
-  // passes. Whether it deals the round is not.
-  const guest=await ctx.newPage()
-  await guest.goto(back,{waitUntil:'networkidle0'}); await pause(800)
-  const dealt=await guest.evaluate(()=>({
-    where: location.pathname+location.search,
-    asked: document.querySelector('.plate__code')?.textContent ?? '',
-  }))
-  await guest.close()
-  check('and opening it deals that same round to whoever it was sent to',
-    dealt.where===new URL(back).pathname+new URL(back).search && dealt.asked.length>0,
-    `${dealt.where} · asks ${dealt.asked || 'nothing'}`)
+  check('and a link to this result, which carries the round inside it',
+    /^https?:\/\/[^/]+\/r\/crnagora\?/.test(back) && /s=deljenje/.test(back) && /g=[01]{3}/.test(back),
+    back)
+  check('whose grid is the round that was just played',
+    back.match(/g=([01]+)/)?.[1]==='100', back.match(/g=[01]+/)?.[0])
   check('an ordinary round claims no challenge number', !/#\d/.test(copied), copied.split('\n')[0])
 
   // nothing in it gives an answer away
@@ -724,11 +717,10 @@ if (!process.env.URL) {
   await p.click('.share__target[data-share]'); await pause(400)
   const shared=await p.evaluate(()=>window.__copied ?? '')
   check('the daily wears its number', /^Tablice #\d+ · \d\/2/.test(shared), shared.split('\n')[0])
-  // Everyone's challenge is the same that day, so it is sent as itself rather
-  // than as one person's seeded copy of it.
-  check("and sends the challenge's own address",
-    shared.trim().endsWith('/dnevni'), shared.split('\n').pop())
-  void day
+  // The date is the seed, which is what lets the page it points at work out
+  // that this was the challenge and offer /dnevni rather than a seeded copy.
+  check("and its link carries the day it was",
+    new RegExp(`/r/[a-z]+\\?s=${day}&`).test(shared.split('\n').pop()), shared.split('\n').pop())
   }
   await ctx.close()
 }
@@ -852,6 +844,89 @@ if (process.env.URL) {
   check('with nothing picked, so it stays out of the confusions',
     kept?.answers[1]?.picked==='' && kept?.answers[1]?.correct===false,
     JSON.stringify(kept?.answers[1]))
+}
+
+// what a shared result previews as. This needs a deployment: the tags are made
+// when the link is opened, by a function, which is the whole point of it —
+// every other route's are written into its HTML when the app is built and say
+// the same thing every day, and a result does not.
+if (process.env.URL) {
+  const crawl=async path=>{
+    const r=await fetch(`${S}${path}`,{headers:{'user-agent':'facebookexternalhit/1.1'}})
+    return {ok:r.ok, status:r.status, html: r.ok? await r.text() : ''}
+  }
+  // Entities decoded, because the value in the HTML is escaped and the URL in
+  // it is not the URL until it is not. Fetching the escaped form asks for
+  // `amp;g=...`, which is no grid at all — so the picture came back as the
+  // country's plate and every check on it passed while looking at the wrong
+  // image entirely.
+  const tag=(html,prop)=>(html.match(new RegExp(`<meta[^>]*(?:property|name)="${prop}"[^>]*>`))?.[0]
+    ?.match(/content="([^"]*)"/)?.[1] ?? '')
+    .replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+
+  const win='/r/srbija?s=proba&g=1111111111&q=37'
+  const poor='/r/srbija?s=proba&g=1000000000&q=180'
+  const a=await crawl(win)
+
+  check('a shared result has a page of its own', a.ok, `${a.status}`)
+  check('whose preview says the score, not the country',
+    /10\/10/.test(tag(a.html,'og:title')), tag(a.html,'og:title'))
+  check('and whose picture is that result',
+    /\/api\/og\?/.test(tag(a.html,'og:image')) && /g=1111111111/.test(tag(a.html,'og:image')),
+    tag(a.html,'og:image'))
+  check('with one of each tag, not two',
+    (a.html.match(/property="og:image"/g)??[]).length===1 &&
+    (a.html.match(/<title>/g)??[]).length===1)
+
+  // Two different rounds must not preview as one picture. This is the whole
+  // complaint that started it: every link looked the same whatever happened.
+  const b=await crawl(poor)
+  check('two different results do not share one preview',
+    tag(a.html,'og:title')!==tag(b.html,'og:title') &&
+    tag(a.html,'og:image')!==tag(b.html,'og:image'),
+    `${tag(a.html,'og:title')} vs ${tag(b.html,'og:title')}`)
+
+  const shot=await fetch(`${S}${tag(a.html,'og:image').replace(/^https?:\/\/[^/]+/,'')}`)
+  const bytes=(await shot.arrayBuffer()).byteLength
+  check('the result picture is a real PNG',
+    shot.headers.get('content-type')==='image/png' && bytes>2000,
+    `${shot.headers.get('content-type')}, ${Math.round(bytes/1024)}KB`)
+
+  const plain=await fetch(`${S}/api/og?t=srbija`)
+  const plainBytes=(await plain.arrayBuffer()).byteLength
+  check('and is not the country plate that a bare link draws',
+    plainBytes!==bytes, `result ${Math.round(bytes/1024)}KB vs plate ${Math.round(plainBytes/1024)}KB`)
+
+  check('the page offers the very round it reports',
+    /href="[^"]*\/srbija\/igra\?[^"]*s=proba/.test(a.html),
+    a.html.match(/href="[^"]*igra[^"]*"/)?.[0] ?? 'no round offered')
+
+  // A link that lost half of itself in a chat app must not preview a made-up
+  // result. It has nothing to say, so it goes where it was meant to go.
+  const broken=await fetch(`${S}/r/srbija?s=proba`,{redirect:'manual'})
+  check('a half-arrived link previews nothing and points home',
+    broken.status>=300 && broken.status<400, `${broken.status}`)
+
+  // How a round was played travels with it, or the round someone is handed is
+  // not the round that was reported: three questions against a clock must come
+  // back as three questions against a clock.
+  // The challenge, which is the one shape everybody plays identically — its
+  // page has to offer /dnevni rather than one person's seeded copy of it.
+  const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Belgrade'}).format(new Date())
+  const rota=['srbija','hrvatska','makedonija','crnagora','jugoslavija','slovenija']
+  const nth=Math.round((Date.parse(today)-Date.parse('2026-08-24'))/86400000)+1
+  const challenge=await crawl(`/r/${rota[(nth-1)%rota.length]}?s=${today}&g=1111111111&q=90`)
+  check('a shared challenge knows which challenge it was',
+    new RegExp(`Tablice #${nth}\\b`).test(tag(challenge.html,'og:title')), tag(challenge.html,'og:title'))
+  check('and offers the challenge rather than a seeded copy of it',
+    /href="[^"]*\/dnevni"/.test(challenge.html),
+    challenge.html.match(/class="r__go" href="[^"]*"/)?.[0] ?? 'nothing offered')
+
+  const clocked=await crawl('/r/crnagora?s=deljenje&c=1&g=101&q=41')
+  check('and how it was played survives the trip',
+    /href="[^"]*\/crnagora\/igra\?[^"]*n=3[^"]*s=deljenje[^"]*t=1/.test(clocked.html) &&
+    /2\/3/.test(tag(clocked.html,'og:title')),
+    `${tag(clocked.html,'og:title')} → ${clocked.html.match(/href="[^"]*igra[^"]*"/)?.[0] ?? 'nothing'}`)
 }
 
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')

@@ -15,6 +15,7 @@ import { ImageResponse } from '@vercel/og'
 // The .js extension is what Node's own module resolution wants; it resolves
 // to rota.ts at build time.
 import { ZONE, countryFor, today } from '../packages/kviz/src/rota.js'
+import { decode, headline, score, type Shared } from '../packages/kviz/src/result.js'
 
 export const config = { runtime: 'edge' }
 
@@ -36,7 +37,17 @@ const asElement = (tree: Node) => tree as unknown as ConstructorParameters<typeo
  * files the app draws, in PNG — the renderer reads PNG and JPEG and skips
  * anything else without saying so.
  */
-const PLATES = {
+type Plate = {
+  mark: string
+  band: string
+  code: string
+  tail: string
+  label: string
+  /** Not every country has one on its plate, and two of these do not. */
+  arms?: string
+}
+
+const PLATES: Record<string, Plate> = {
   srbija: { mark: 'SRB', band: '#0d3a86', code: 'BG', tail: '000-AA', label: 'Srbija', arms: 'rs' },
   hrvatska: { mark: 'HR', band: '#003399', code: 'ZG', tail: '0000-AA', label: 'Hrvatska', arms: 'hr' },
   makedonija: { mark: 'NMK', band: '#1029c4', code: 'SK', tail: '1234 AB', label: 'Makedonija' },
@@ -80,6 +91,132 @@ function untilTomorrow(now: Date) {
   return Math.max(60, Math.round((midnight - hereNow) / 1000))
 }
 
+/**
+ * The answer colours, the same two the app and the saved card use. Teal and
+ * orange rather than green and red: those two collapse for the six percent of
+ * men who cannot separate them, and these squares carry no label to fall back
+ * on.
+ */
+const RIGHT = '#009486'
+const WRONG = '#f08b45'
+
+/**
+ * A finished round, drawn for the link that carries it.
+ *
+ * Landscape, because this is what a chat app and a timeline crop toward — the
+ * square card is a different object for a different place, the one somebody
+ * posts to Instagram themselves. What the two must agree on is what they say,
+ * and they do: both take their line from `headline` in result.ts.
+ */
+function resultCard(shared: Shared, label: string) {
+  const rows: boolean[][] = []
+  for (let at = 0; at < shared.marks.length; at += 5) rows.push(shared.marks.slice(at, at + 5))
+  // Ten questions draw at full size; seventy-four across Yugoslavia is fifteen
+  // rows, and it is the square that gives way rather than the picture.
+  const size = Math.max(10, Math.min(58, Math.floor((250 - 8 * (rows.length - 1)) / rows.length)))
+  const gap = Math.max(4, Math.round(size * 0.18))
+
+  return {
+    type: 'div',
+    props: {
+      style: {
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 26,
+        background: '#f2f1ec',
+        fontFamily: 'sans-serif',
+      },
+      children: [
+        // The plate, small. A preview without it is a score on a beige field
+        // and could be any quiz in the world; the plate is the one thing that
+        // says which app this came from at the size a timeline shows it.
+        {
+          type: 'div',
+          props: {
+            style: {
+              display: 'flex',
+              height: 82,
+              padding: 5,
+              borderRadius: 11,
+              background: '#ffffff',
+              border: '4px solid #14161a',
+            },
+            children: [
+              {
+                type: 'div',
+                props: { style: { display: 'flex', width: 34, borderRadius: 7, background: '#0d3a86' } },
+              },
+              {
+                type: 'div',
+                props: {
+                  style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0 22px',
+                    fontSize: 44,
+                    fontWeight: 700,
+                    color: '#101215',
+                  },
+                  children: 'TABLICE',
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { display: 'flex', fontSize: 34, fontWeight: 600, color: '#5c626e' },
+            children: headline(shared, label),
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { display: 'flex', fontSize: 132, fontWeight: 700, color: '#15171c' },
+            children: `${score(shared)}/${shared.marks.length}`,
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { display: 'flex', flexDirection: 'column', gap },
+            children: rows.map((row) => ({
+              type: 'div',
+              props: {
+                style: { display: 'flex', gap },
+                children: row.map((ok) => ({
+                  type: 'div',
+                  props: {
+                    style: {
+                      display: 'flex',
+                      width: size,
+                      height: size,
+                      borderRadius: Math.max(3, Math.round(size * 0.14)),
+                      background: ok ? RIGHT : WRONG,
+                    },
+                  },
+                })),
+              },
+            })),
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { display: 'flex', fontSize: 30, color: '#5c626e' },
+            children: 'Probaj isti krug — tablice.vercel.app',
+          },
+        },
+      ],
+    },
+  }
+}
+
 export default function handler(req: Request) {
   const url = new URL(req.url)
   const asked = url.searchParams.get('t') ?? 'srbija'
@@ -90,6 +227,22 @@ export default function handler(req: Request) {
   const plate = PLATES[topic] ?? PLATES.srbija
   const yu = topic === 'jugoslavija'
   const site = `${url.protocol}//${url.host}`
+
+  // A round came with the ask, so the picture is that round rather than the
+  // country's plate. Everything below is untouched by this and stays what a
+  // link to a country previews as.
+  const shared = decode(topic, url.searchParams)
+  if (shared) {
+    return new ImageResponse(asElement(resultCard(shared, plate.label) as Node), {
+      width: W,
+      height: H,
+      headers: {
+        // A finished round never changes, so its picture never does either.
+        'cache-control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+        'x-plate': topic,
+      },
+    })
+  }
 
   return new ImageResponse(
     asElement({

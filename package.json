@@ -6,10 +6,11 @@
   "scripts": {
     "dev:tablice": "npm run dev -w @kviz/tablice",
     "dev:geografija": "npm run dev -w @kviz/geografija",
-    "build": "npm run build -w @kviz/tablice && npm run build -w @kviz/geografija",
+    "build": "npm run typecheck:api && npm run build -w @kviz/tablice && npm run build -w @kviz/geografija",
     "build:tablice": "npm run build -w @kviz/tablice",
     "build:geografija": "npm run build -w @kviz/geografija",
-    "lint": "oxlint && node packages/kviz/check-css.mjs"
+    "lint": "oxlint && node packages/kviz/check-css.mjs",
+    "typecheck:api": "tsc --noEmit -p api/tsconfig.json"
   },
   "devDependencies": {
     "@types/d3-geo": "^3.1.1",

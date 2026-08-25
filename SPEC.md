@@ -6,7 +6,7 @@ built, and what is left.
 Rendered and shareable: [claude.ai/code/artifact/ab9911f1](https://claude.ai/code/artifact/ab9911f1-f66d-441c-8d90-0aa61d59bd06)
 
 > **Reading this.** Section 2 is drawn from the repository's history and is
-> accurate to 25 August 2026, when lint, both builds and both browser suites
+> accurate to 26 August 2026, when lint, both builds and both browser suites
 > were last run against production and came back clean; section 4 lists things
 > checked and found wanting on that date. Sections 1, 3 and 5 are a proposal and are meant to be
 > argued with. Three statuses are used and they mean what they say:
@@ -39,7 +39,7 @@ not, and the ones that are not are the work that remains. **Four of seven hold.*
 
 ## 2 · The record — what is built
 
-Fifty-four commits between 14 and 25 August 2026, in ten areas. Everything
+Fifty-six commits between 14 and 26 August 2026, in ten areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -138,12 +138,24 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   picture saved, or the text copied. Not a button. A button that quietly copies
   was the whole of this until 25 August, and it neither said what it had done
   nor offered anywhere to put it.
-- **The link is the round.** It was the bare hostname, which dropped whoever
-  opened it on the front page rather than on the questions they had just been
-  sent — the one thing a shared result must not do. An ordinary round now sends
-  its own seeded address, so the same questions come up in the same order for
-  whoever opens it; the daily sends `/dnevni`, since everyone's is the same that
-  day.
+- **A result has an address of its own**, `/r/…`, and it previews as what
+  happened. This took three tries. The bare hostname dropped whoever opened it
+  on the front page. The round's own address at least dealt them the questions —
+  but it previews as the country's plate, the same picture for a perfect ten and
+  a miserable two, because those tags are written once when the app is built and
+  cannot know what happened. So a result is answered by a function that makes
+  its tags when the link is opened: the score in the title, the grid in the
+  picture, and the round itself one press away.
+- The page is served to everyone alike, crawler and person — no sniffing, the
+  same rule the built pages follow. A crawler reads the tags and stops; a person
+  reads the score and presses *Probaj isti krug*.
+- A link that lost half of itself in a chat app previews nothing and goes to the
+  country it named, rather than inventing a result to show.
+- `t` meant *timed* in a round's address and *topic* to both the picture and the
+  page, and Vercel's rewrite hands the topic over in the query — so a clocked
+  round went out `t=1&t=crnagora` and came back unclocked, silently. The clock
+  is `c` in a share link now. One letter with two meanings, found by a check
+  rather than by a person.
 - The card is square, and Instagram is the reason: it is the one target that
   takes no link at all — there is no address that opens a prefilled post — so
   the only way to it is a picture a person posts themselves, through the phone's
@@ -200,12 +212,19 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 104 checks across the two apps — 93 and 11, counted by running them rather
+- 116 checks across the two apps — 105 and 11, counted by running them rather
   than by counting the lines that call them — each written to fail before it was
   made to pass; the daily's, the preview's, the share's and the round trip
   through the server were each watched failing with the feature removed. No
-  single run of tablice does all 93: thirty want a dev server, nine want a
-  deployment, and the fifty-four left run either way.
+  single run of tablice does all 105: thirty want a dev server, twenty-one want
+  a deployment, and the fifty-four left run either way.
+- Two of them were written, watched passing, and rewritten because they were
+  passing for the wrong reason — one fetched a link from inside the app, where
+  every wrong answer resolves against the dev server and comes back as the page
+  shell; the other fetched an HTML-escaped URL, so it graded the country's plate
+  while believing it was looking at a result.
+- `api/` is type-checked, as of 26 August. It never was, and it had a real error
+  in it — two serverless functions that nothing checked before a deploy.
 
 ---
 

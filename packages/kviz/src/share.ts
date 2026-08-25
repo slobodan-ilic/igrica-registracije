@@ -1,5 +1,5 @@
 import { clock } from './format'
-import { href } from './router'
+import { shareHref, type Shared } from './result'
 import type { Played } from './history'
 
 /**
@@ -52,31 +52,37 @@ export function titleOf(
   return `${what} · ${score}${time}`
 }
 
+/** The round, in the shape a link can carry it. */
+export function sharedOf(round: Played): Shared {
+  return {
+    topic: round.topic,
+    seed: round.seed,
+    easy: round.easy,
+    kim: round.kim,
+    timed: round.timed,
+    marks: round.answers.map((a) => a.correct),
+    seconds: round.ms > 0 ? Math.round(round.ms / 1000) : 0,
+  }
+}
+
 /**
- * Where the link goes: the round that was actually played.
+ * Where the link goes: a page that is this result.
  *
- * This used to be the bare host, which dropped whoever opened it on the front
- * page — the one thing a shared result must not do. A round is its URL here, so
- * sending the result can send the round with it: the same questions in the same
- * order, for anyone who wants to try what you just did. The challenge keeps its
- * own address instead, since everyone's is the same that day and a seeded link
- * to it would be a second way of saying the same thing.
+ * It was the bare hostname once, which dropped whoever opened it on the front
+ * page. Then it was the round's own address, which at least dealt them the
+ * questions — but a round's address previews as the country's plate, the same
+ * picture for a perfect ten and a miserable two, because those tags are written
+ * once when the app is built and cannot know what happened.
  *
- * Neither form gives an answer away. A round's URL carries topic, length, seed
- * and how it was played, and nothing about what is in it.
+ * So a result gets an address of its own, `/r/…`, answered by a function that
+ * makes its tags when the link is opened. What it previews as is the score. The
+ * round itself is one press away from there, and is what the page is for.
+ *
+ * Nothing in the address gives an answer away: which round it was, and which
+ * questions went right. Never a code, never a place.
  */
-export function shareLink(round: Played, { daily, site }: { daily: number | null; site: string }) {
-  const path =
-    daily === null
-      ? href.game(round.topic, {
-          length: round.length,
-          seed: round.seed,
-          easy: round.easy,
-          kim: round.kim,
-          timed: round.timed,
-        })
-      : href.daily()
-  return `${site}${path}`
+export function shareLink(round: Played, { site }: { site: string }) {
+  return `${site}${shareHref(sharedOf(round))}`
 }
 
 /**
