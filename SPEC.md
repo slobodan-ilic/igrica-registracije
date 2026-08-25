@@ -39,7 +39,7 @@ not, and the ones that are not are the work that remains. **Four of seven hold.*
 
 ## 2 · The record — what is built
 
-Fifty-two commits between 14 and 25 August 2026, in nine areas. Everything
+Fifty-four commits between 14 and 25 August 2026, in ten areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -147,6 +147,19 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   the old copy command, because Safari, any page not on https, and any browser
   with the permission denied all refuse the modern one.
 
+### Counting who plays · shipped 25 Aug
+
+- Both apps ask Vercel for page views, in production only. Page views and
+  nothing else: no cookies, no accounts, nothing about a person.
+- It went out once before the switch was on and came straight back: Vercel
+  serves no script until Web Analytics is enabled per project, and the route
+  that serves it is written into a deployment when it is built — so the switch
+  comes first, then a deploy, in that order. The geography suite caught the
+  wrong order, four "no console errors" checks, one per topic.
+- Two rounds had reached the database when this went on. That is the number the
+  next decision rests on: a doorway from search is the right build if nobody
+  arrives, a deeper game is the right build if people arrive and leave.
+
 ### A round survives the trip · shipped 25 Aug
 
 - Whether a round was played against the clock now goes up with it and comes
@@ -224,19 +237,6 @@ Things that work but are wrong, or that were left half-done and have stayed
 that way. Not features — none of these would appear on a list of what the app
 lacks, and every one of them is visible to somebody using it. Fix them between
 the numbered items rather than after them.
-
-### Nobody knows whether anyone is playing
-
-Two rounds have ever reached the database. That is the whole of what is known
-about who plays, and it is not enough to choose between the two remaining
-builds: a doorway from search is the right next thing if nobody arrives, and a
-deeper game is the right next thing if people arrive and leave.
-
-Both apps were wired for page views on 25 August and the wiring was reverted
-the same hour: Vercel does not serve the script until Web Analytics is enabled
-per project in the dashboard, and until then every page load takes a 404. The
-switch is a click, needs no redeploy, and has no CLI or API. Flip it, revert
-the revert, deploy.
 
 ### The geography app's progress can never leave the browser
 

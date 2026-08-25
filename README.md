@@ -48,25 +48,21 @@ shared and — once there are accounts — stored.
 
 ## Counting who plays
 
-**The switch comes first**, per project: **Vercel → the project → Analytics →
-Enable Web Analytics**. Until that is on, Vercel does not serve
-`/_vercel/insights/script.js`, and a page that asks for it takes a 404 on every
-load. This has been tried in the wrong order once, and the geography suite
-caught it: four "no console errors" checks, one per topic.
-
-There is no CLI or API for the switch — `PATCH /v9/projects/{id}` rejects
-`webAnalytics` outright. It is a click, and it needs no redeploy: the script is
-served by the platform, so counting starts the moment it is on.
-
-Once it is on, each app's `main.tsx` takes two lines:
+On, for both projects, since 25 August. Each app's `main.tsx` carries two lines:
 
 ```ts
 import { inject } from '@vercel/analytics'
 if (import.meta.env.PROD) inject()
 ```
 
-That change is written and reverted, so re-landing it is one `git revert` of
-`7497706` and a deploy.
+**The order matters, and it caught us out once.** The switch is per project —
+**Vercel → the project → Analytics → Enable Web Analytics** — there is no CLI
+or API for it (`PATCH /v9/projects/{id}` rejects `webAnalytics` outright), and
+the route that serves `/_vercel/insights/script.js` is written into a
+deployment when it is built. So: flip the switch, *then* deploy. Ship the two
+lines against a project where it is off, or against a deployment built before
+it was on, and every page load takes a 404 — which the geography suite fails
+on, four "no console errors" checks, one per topic.
 
 Page views only — no cookies, no accounts, nothing about a person. It answers
 "is anyone playing", which is not the question signing in answers.
