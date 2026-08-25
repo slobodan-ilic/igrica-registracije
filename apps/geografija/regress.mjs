@@ -13,7 +13,7 @@ process.on('unhandledRejection',async e=>{console.error('\n'+(e?.message??e)); a
 
 const b=await launch({args:['--touch-events=enabled']})
 const pause=ms=>new Promise(r=>setTimeout(r,ms))
-const S=process.env.URL ?? 'http://localhost:5183'
+const S=process.env.URL ?? 'http://localhost:5174'
 const TIP_ROUTE='/okruzi/igra?n=25'
 let fails=0
 const check=(label,ok,extra='')=>{console.log(`  ${ok?'✓':'✗'} ${label}${extra?' — '+extra:''}`); if(!ok)fails++}
