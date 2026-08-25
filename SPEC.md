@@ -6,8 +6,9 @@ built, and what is left.
 Rendered and shareable: [claude.ai/code/artifact/ab9911f1](https://claude.ai/code/artifact/ab9911f1-f66d-441c-8d90-0aa61d59bd06)
 
 > **Reading this.** Section 2 is drawn from the repository's history and is
-> accurate to 24 August 2026, and section 4 lists things checked and found
-> wanting on that date. Sections 1, 3 and 5 are a proposal and are meant to be
+> accurate to 25 August 2026, when lint, both builds and both browser suites
+> were last run against production and came back clean; section 4 lists things
+> checked and found wanting on that date. Sections 1, 3 and 5 are a proposal and are meant to be
 > argued with. Three statuses are used and they mean what they say:
 > **Shipped** is live and checked, **Next** is agreed and not started, **After**
 > and **Last** are sequenced by what they depend on rather than by preference.
@@ -38,7 +39,7 @@ not, and the ones that are not are the work that remains. **Four of seven hold.*
 
 ## 2 · The record — what is built
 
-Forty-four commits between 14 and 24 August 2026, in eight areas. Everything
+Forty-nine commits between 14 and 25 August 2026, in ten areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -146,6 +147,30 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   the old copy command, because Safari, any page not on https, and any browser
   with the permission denied all refuse the modern one.
 
+### Counting who plays · shipped 25 Aug
+
+- Both apps ask Vercel for page views, in production only. Page views and
+  nothing else: no cookies, no accounts, nothing about a person. It answers
+  "is anyone playing", which is the number that decides whether the next thing
+  built is a doorway from search or a deeper game for the people already here.
+- Each project still needs its switch flipped in the Vercel dashboard before a
+  single view is recorded.
+
+### A round survives the trip · shipped 25 Aug
+
+- Whether a round was played against the clock now goes up with it and comes
+  back down again. It never did: `round` had no column for it, so a synced round
+  matched neither the clocked rounds nor the unclocked ones, and dropped out of
+  the end-of-round comparison entirely on any second device.
+- A question the clock ran out on is recorded with nothing picked, and the sync
+  endpoint used to drop every answer without a pick. A ten-question round with
+  two timeouts arrived as eight — shorter, more accurate, and with a streak the
+  timeout had broken closed back up.
+- Both were found by reading rather than by playing, and both are now checked:
+  a round goes through `clean()` in the suite and is asserted to come out whole.
+  It is the one check with no browser in it, because the loss happened where no
+  browser could see it.
+
 ### Underneath · shipped 17–24 Aug
 
 - Two apps over one shared engine, deployed as separate projects from one
@@ -155,9 +180,12 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 92 browser checks across the two apps, each written to fail before it was made
-  to pass — the daily's, the preview's and the share's were each watched failing
-  with the feature removed.
+- 100 checks across the two apps — 89 and 11, counted by running them rather
+  than by counting the lines that call them — each written to fail before it was
+  made to pass; the daily's, the preview's, the share's and the round trip
+  through the server were each watched failing with the feature removed. No
+  single run of tablice does all 89: twenty-six want a dev server, nine want a
+  deployment, and the fifty-four left run either way.
 
 ---
 

@@ -48,15 +48,10 @@ shared and — once there are accounts — stored.
 
 ## Counting who plays
 
-Not wired up yet, and it needs one switch flipped first: **Vercel → the project
-→ Analytics → Enable Web Analytics**. Until that is on, the script the page
-would ask for is not served, and a 404 in the console is worse than not
-counting. Once it is on, each app's `main.tsx` takes two lines:
-
-```ts
-import { inject } from '@vercel/analytics'
-if (import.meta.env.PROD) inject()
-```
+Both apps ask for it, in production only — two lines at the top of each
+`main.tsx`. It still needs one switch flipped per project, in the dashboard:
+**Vercel → the project → Analytics → Enable Web Analytics**. Until that is on
+the script is not served, and the page asks for something that answers 404.
 
 Page views only — no cookies, no accounts, nothing about a person. It answers
 "is anyone playing", which is not the question signing in answers.
@@ -70,9 +65,13 @@ analytics script, and the browser tries to parse a page of HTML as JavaScript.
 ```sh
 npm install                  # once, at the root — npm workspaces
 npm run dev:tablice          # http://localhost:5173
-npm run dev:geografija
+npm run dev:geografija       # http://localhost:5174
 npm run build                # both
 ```
+
+Both ports are pinned rather than found: each app's `regress.mjs` looks at its
+own by default, and a server that had slid to the next free port would hand the
+suite the other quiz to report on.
 
 Datasets are rebuilt per app, from inside that app:
 
@@ -88,6 +87,12 @@ Run it against a dev server, or against production with `URL=`:
 cd apps/tablice && node regress.mjs
 cd apps/geografija && URL=https://... node regress.mjs
 ```
+
+Neither run is the whole suite. Tablice has 89 checks and no single run does all
+of them: 80 want a dev server — a stubbed sign-in, syncing, the clock, the
+clipboard — and 63 want a deployment, nine of those because the preview tags are
+written into the built HTML and the picture comes from a function under `api/`.
+Run both.
 
 ## Why one repo
 

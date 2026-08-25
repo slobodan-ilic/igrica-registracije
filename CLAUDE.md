@@ -39,8 +39,17 @@ deliberately out of scope.
   class name the shared system already owns. That has caused two invisible
   layout bugs.
 - `npm run build` — both apps, with `tsc --noEmit` first.
-- `node regress.mjs` in either app, against a dev server or `URL=` a deployment.
-  61 real-browser checks.
+- `node regress.mjs` in either app, against its own dev server (tablice 5173,
+  geografija 5174, both pinned) or `URL=` a deployment. 100 checks: 89 in
+  tablice, 11 in geografija.
+- **No single run of tablice executes all 89.** Against a dev server 80 run;
+  against a deployment, 63. Twenty-six need the dev server — a stubbed sign-in,
+  syncing, the clock, the clipboard, the empty progress page — and nine need a
+  deployment, because the preview tags are written into the built HTML and the
+  picture is drawn by a function under `api/`. **Both, before believing a
+  release**, and count from the run rather than from the calls to `check()`:
+  they sit inside `if (process.env.URL)` either way, which is how the number in
+  this file was wrong twice.
 
 **Write the check so it fails first.** Several checks in this suite were
 passing vacuously until that was verified — one tested a tooltip in a browser
