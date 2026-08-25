@@ -132,8 +132,24 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 
 ### Sending it on · shipped 24 Aug
 
-- The end of a round offers the result as text you can paste: the score, one
-  square per question in the order they were asked, and a link back.
+- The end of a round draws the result as a card — the plate, the score, one
+  square per question in the order they were asked — and puts the places it can
+  go underneath it: X, WhatsApp, Telegram, Facebook, Viber on a phone, the
+  picture saved, or the text copied. Not a button. A button that quietly copies
+  was the whole of this until 25 August, and it neither said what it had done
+  nor offered anywhere to put it.
+- **The link is the round.** It was the bare hostname, which dropped whoever
+  opened it on the front page rather than on the questions they had just been
+  sent — the one thing a shared result must not do. An ordinary round now sends
+  its own seeded address, so the same questions come up in the same order for
+  whoever opens it; the daily sends `/dnevni`, since everyone's is the same that
+  day.
+- The card is square, and Instagram is the reason: it is the one target that
+  takes no link at all — there is no address that opens a prefilled post — so
+  the only way to it is a picture a person posts themselves, through the phone's
+  own share sheet.
+- One drawing routine paints the canvas the summary shows *and* the file that
+  leaves, so what someone looks at before sending is the thing that gets sent.
 - Nothing in it gives an answer away — no code, no place name. A line naming
   what you missed would feel like a kindness and would ruin the day's challenge
   for whoever read it, so the check asserts the *absence* of every code and name
@@ -184,11 +200,11 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 100 checks across the two apps — 89 and 11, counted by running them rather
+- 104 checks across the two apps — 93 and 11, counted by running them rather
   than by counting the lines that call them — each written to fail before it was
   made to pass; the daily's, the preview's, the share's and the round trip
   through the server were each watched failing with the feature removed. No
-  single run of tablice does all 89: twenty-six want a dev server, nine want a
+  single run of tablice does all 93: thirty want a dev server, nine want a
   deployment, and the fifty-four left run either way.
 
 ---

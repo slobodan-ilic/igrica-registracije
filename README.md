@@ -99,8 +99,8 @@ cd apps/tablice && node regress.mjs
 cd apps/geografija && URL=https://... node regress.mjs
 ```
 
-Neither run is the whole suite. Tablice has 89 checks and no single run does all
-of them: 80 want a dev server — a stubbed sign-in, syncing, the clock, the
+Neither run is the whole suite. Tablice has 93 checks and no single run does all
+of them: 84 want a dev server — a stubbed sign-in, syncing, the clock, the
 clipboard — and 63 want a deployment, nine of those because the preview tags are
 written into the built HTML and the picture comes from a function under `api/`.
 Run both.

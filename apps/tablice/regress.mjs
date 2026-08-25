@@ -655,23 +655,53 @@ if (!process.env.URL) {
 
   // an ordinary round, on a seed that is not a date
   await play('/crnagora/igra?n=3&s=deljenje')
-  const offered=(await p.$$('.btn--share')).length===1
-  check('the summary offers a way to send the result', offered,
-    offered? '' : 'no share control on the end-of-round screen')
+  // The result leaves as a picture with somewhere to put it, not as a button
+  // that quietly copies. So: the card is drawn, and the places are offered.
+  const targets=await p.$$eval('.share__target',es=>es.map(e=>e.getAttribute('title')))
+  const offered=targets.length>0 && !!(await p.$('.share__card'))
+  check('the summary shows the card and where it can go', offered, targets.join(' · '))
+  check('and offers somewhere other than the clipboard',
+    targets.some(t=>/^(X|WhatsApp|Telegram|Facebook)$/.test(t)), targets.join(' · '))
+
+  // Drawn, not merely present: an empty canvas is the shape of this going wrong
+  // and it looks identical in the DOM.
+  const painted=await p.$eval('.share__card',c=>{
+    const x=c.getContext('2d').getImageData(0,0,c.width,c.height).data
+    const seen=new Set()
+    for(let at=0;at<x.length;at+=4) seen.add(`${x[at]},${x[at+1]},${x[at+2]}`)
+    return {side:c.width, colours:seen.size}
+  })
+  check('the card is actually painted',
+    painted.side===1080 && painted.colours>4, `${painted.side}px, ${painted.colours} colours`)
 
   if (offered) {
-  await p.click('.btn--share'); await pause(400)
+  await p.click('.share__target[data-share]'); await pause(400)
   const copied=await p.evaluate(()=>window.__copied ?? '')
-  check('pressing it copies, and says it did',
-    (await p.$eval('.btn--share',e=>e.textContent))==='Kopirano',
-    await p.$eval('.btn--share',e=>e.textContent))
+  check('copying says it did', (await p.$eval('.share__said',e=>e.textContent))==='Kopirano',
+    await p.$eval('.share__said',e=>e.textContent))
 
   const lines=copied.split('\n')
   check('it names the quiz and the score', /^Tablice · Crna Gora · \d\/3/.test(lines[0]), lines[0])
   check('one mark per question, in order',
     [...lines.slice(1,-1).join('')].filter(c=>c==='🟩'||c==='⬛').length===3 &&
     lines.slice(1,-1).join('').startsWith('🟩⬛'), JSON.stringify(lines.slice(1,-1)))
-  check('and a way back to the app', lines[lines.length-1]==='tablice.vercel.app', lines[lines.length-1])
+  const back=lines[lines.length-1]
+  check('and a link to the round that was played, not to the front page',
+    /\/crnagora\/igra\?/.test(back) && /s=deljenje/.test(back) && /^https?:\/\//.test(back), back)
+  // Opened rather than fetched. A bare host fetches perfectly well from inside
+  // the app — it resolves against the dev server and comes back as the page
+  // shell — so asking whether it responds is a question every wrong answer
+  // passes. Whether it deals the round is not.
+  const guest=await ctx.newPage()
+  await guest.goto(back,{waitUntil:'networkidle0'}); await pause(800)
+  const dealt=await guest.evaluate(()=>({
+    where: location.pathname+location.search,
+    asked: document.querySelector('.plate__code')?.textContent ?? '',
+  }))
+  await guest.close()
+  check('and opening it deals that same round to whoever it was sent to',
+    dealt.where===new URL(back).pathname+new URL(back).search && dealt.asked.length>0,
+    `${dealt.where} · asks ${dealt.asked || 'nothing'}`)
   check('an ordinary round claims no challenge number', !/#\d/.test(copied), copied.split('\n')[0])
 
   // nothing in it gives an answer away
@@ -691,9 +721,13 @@ if (!process.env.URL) {
   const daily=JSON.parse(readFileSync(`data/${link.split('/')[1]}.json`,'utf8')).features.map(f=>f.properties)
   feats.length=0; feats.push(...daily)
   await play(link.replace(/n=\d+/,'n=2'))
-  await p.click('.btn--share'); await pause(400)
+  await p.click('.share__target[data-share]'); await pause(400)
   const shared=await p.evaluate(()=>window.__copied ?? '')
   check('the daily wears its number', /^Tablice #\d+ · \d\/2/.test(shared), shared.split('\n')[0])
+  // Everyone's challenge is the same that day, so it is sent as itself rather
+  // than as one person's seeded copy of it.
+  check("and sends the challenge's own address",
+    shared.trim().endsWith('/dnevni'), shared.split('\n').pop())
   void day
   }
   await ctx.close()

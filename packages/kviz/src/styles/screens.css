@@ -505,12 +505,94 @@
   .menu .today { order: 4; }
 }
 
-/* The one action on the summary worth reaching for first. */
-.btn--share {
-  border-color: transparent;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-weight: 700;
+/* How a finished round leaves: the card, then the places it can go.
+   Its own block rather than a row of buttons — the card is the thing being
+   sent, so it is what you look at while deciding whether to send it. */
+.share {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  margin: 0.4rem 0 0.2rem;
 }
 
-.btn--share:hover { border-color: transparent; filter: brightness(1.08); }
+/* Square, and never taller than it is useful: the card is 1080 and this is a
+   picture of it, not a layout. */
+.share__card {
+  width: min(280px, 62vw);
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(20 22 26 / 0.05), 0 8px 24px rgb(20 22 26 / 0.06);
+}
+
+.share__targets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A pill, because it is a destination rather than a command. */
+.share__target {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.share__target:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.share__mark {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  fill: currentColor;
+}
+
+/* The name is what makes a row of marks readable to someone who does not
+   recognise every logo in it. It goes only where there is no room. */
+@media (max-width: 30rem) {
+  .share__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Icon alone, so the pill has to carry the target on its own: 44px is the
+     smallest thing a thumb hits reliably. */
+  .share__target {
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+}
+
+/* Says where the link goes until there is something to report, and then says
+   what happened. One line either way, so nothing moves when it changes. */
+.share__said {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}

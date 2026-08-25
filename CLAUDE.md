@@ -40,10 +40,10 @@ deliberately out of scope.
   layout bugs.
 - `npm run build` — both apps, with `tsc --noEmit` first.
 - `node regress.mjs` in either app, against its own dev server (tablice 5173,
-  geografija 5174, both pinned) or `URL=` a deployment. 100 checks: 89 in
+  geografija 5174, both pinned) or `URL=` a deployment. 104 checks: 93 in
   tablice, 11 in geografija.
-- **No single run of tablice executes all 89.** Against a dev server 80 run;
-  against a deployment, 63. Twenty-six need the dev server — a stubbed sign-in,
+- **No single run of tablice executes all 93.** Against a dev server 84 run;
+  against a deployment, 63. Thirty need the dev server — a stubbed sign-in,
   syncing, the clock, the clipboard, the empty progress page — and nine need a
   deployment, because the preview tags are written into the built HTML and the
   picture is drawn by a function under `api/`. **Both, before believing a

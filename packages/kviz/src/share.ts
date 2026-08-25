@@ -1,3 +1,5 @@
+import { clock } from './format'
+import { href } from './router'
 import type { Played } from './history'
 
 /**
@@ -19,13 +21,6 @@ const WRONG = '⬛'
 /** Five to a row, which keeps ten on two lines and seventy-four on fifteen. */
 const PER_ROW = 5
 
-/** 1:47, or 47s when it never reaches a minute. */
-function clock(ms: number) {
-  const total = Math.round(ms / 1000)
-  const min = Math.floor(total / 60)
-  return min ? `${min}:${String(total % 60).padStart(2, '0')}` : `${total}s`
-}
-
 function grid(round: Played) {
   const marks = round.answers.map((a) => (a.correct ? RIGHT : WRONG))
   const rows = []
@@ -41,12 +36,74 @@ function grid(round: Played) {
  */
 export function shareText(
   round: Played,
-  { label, daily, site }: { label: string; daily: number | null; site: string },
+  { label, daily, link }: { label: string; daily: number | null; link: string },
+) {
+  return `${titleOf(round, { label, daily })}\n${grid(round)}\n${link}`
+}
+
+/** "Tablice #2", or "Tablice · Crna Gora · 7/10 · 2:50" when it was not one. */
+export function titleOf(
+  round: Played,
+  { label, daily }: { label: string; daily: number | null },
 ) {
   const what = daily === null ? `Tablice · ${label}` : `Tablice #${daily}`
   const score = `${round.score}/${round.answers.length}`
   const time = round.ms > 0 ? ` · ${clock(round.ms)}` : ''
-  return `${what} · ${score}${time}\n${grid(round)}\n${site}`
+  return `${what} · ${score}${time}`
+}
+
+/**
+ * Where the link goes: the round that was actually played.
+ *
+ * This used to be the bare host, which dropped whoever opened it on the front
+ * page — the one thing a shared result must not do. A round is its URL here, so
+ * sending the result can send the round with it: the same questions in the same
+ * order, for anyone who wants to try what you just did. The challenge keeps its
+ * own address instead, since everyone's is the same that day and a seeded link
+ * to it would be a second way of saying the same thing.
+ *
+ * Neither form gives an answer away. A round's URL carries topic, length, seed
+ * and how it was played, and nothing about what is in it.
+ */
+export function shareLink(round: Played, { daily, site }: { daily: number | null; site: string }) {
+  const path =
+    daily === null
+      ? href.game(round.topic, {
+          length: round.length,
+          seed: round.seed,
+          easy: round.easy,
+          kim: round.kim,
+          timed: round.timed,
+        })
+      : href.daily()
+  return `${site}${path}`
+}
+
+/**
+ * Where a result can be sent, and how each one wants to be told.
+ *
+ * Every target here takes a link. Instagram does not — there is no address that
+ * opens a prefilled post, by Instagram's own design — so it is reachable only
+ * through the phone's own share sheet, with the picture attached, which is what
+ * the sheet button is for and why the card is drawn square.
+ *
+ * Viber is worth the row it takes in this part of the world, and it is the one
+ * that only exists on a phone.
+ */
+export type Target = { id: string; label: string; href: string; touchOnly?: boolean }
+
+export function targets(text: string, link: string): Target[] {
+  const t = encodeURIComponent(text)
+  const u = encodeURIComponent(link)
+  // The grid is the result; a target that takes only one field should carry it.
+  const withoutLink = encodeURIComponent(text.slice(0, text.lastIndexOf('\n')))
+  return [
+    { id: 'x', label: 'X', href: `https://twitter.com/intent/tweet?text=${withoutLink}&url=${u}` },
+    { id: 'whatsapp', label: 'WhatsApp', href: `https://wa.me/?text=${t}` },
+    { id: 'viber', label: 'Viber', href: `viber://forward?text=${t}`, touchOnly: true },
+    { id: 'telegram', label: 'Telegram', href: `https://t.me/share/url?url=${u}&text=${withoutLink}` },
+    { id: 'facebook', label: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${u}` },
+  ]
 }
 
 /**
@@ -106,5 +163,33 @@ function legacyCopy(text: string) {
     return false
   } finally {
     box.remove()
+  }
+}
+
+/**
+ * The card itself, through the phone's own share sheet — the only route to
+ * Instagram, and the one that puts the picture rather than a link into whatever
+ * the person picks.
+ *
+ * The file must be ready before this is called. Building it here would put an
+ * await between the tap and the sheet, and Safari refuses a sheet that is not
+ * opened inside the gesture that asked for it.
+ */
+export function canSendFile(file: File | null): boolean {
+  return (
+    !!file &&
+    typeof navigator.canShare === 'function' &&
+    typeof navigator.share === 'function' &&
+    navigator.canShare({ files: [file] })
+  )
+}
+
+export async function sendFile(file: File, text: string): Promise<'shared' | 'failed'> {
+  try {
+    await navigator.share({ files: [file], text })
+    return 'shared'
+  } catch (e) {
+    // Dismissing the sheet is a decision, not a failure.
+    return (e as Error)?.name === 'AbortError' ? 'shared' : 'failed'
   }
 }

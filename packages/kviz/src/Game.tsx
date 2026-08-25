@@ -7,9 +7,9 @@ import { joinSr } from './deck'
 import { plural } from './sr'
 import { randomSeed } from './deck'
 import { record, sync, type Played } from './history'
-import { numberOf } from './challenge'
 import { against } from './stats'
-import { send, shareText } from './share'
+import { Share } from './ShareCard'
+import { clock } from './format'
 import { budget, CHOICES, useRound } from './useRound'
 import type { Theme } from './prefs'
 import type { Topic, TopicData } from './topic'
@@ -63,42 +63,6 @@ function InContext({ round }: { round: Played }) {
       {gap >= 1 && <> — ovo je {gap} {plural(gap, 'poen', 'poena', 'poena')} {seen.better > 0 ? 'iznad' : 'ispod'} toga</>}.
     </p>
   )
-}
-
-/**
- * Sends the result. Its own component because it holds a moment of state — what
- * just happened when you pressed it — and the summary around it should not
- * re-render for that.
- */
-function Share({ round, label }: { round: Played; label: string }) {
-  const [said, setSaid] = useState<string | null>(null)
-
-  const text = shareText(round, {
-    label,
-    daily: numberOf(round),
-    site: 'tablice.vercel.app',
-  })
-
-  return (
-    <button
-      className="btn btn--share"
-      data-share={text}
-      onClick={async () => {
-        const how = await send(text)
-        setSaid(how === 'failed' ? 'Nije uspelo' : how === 'shared' ? 'Poslato' : 'Kopirano')
-        window.setTimeout(() => setSaid(null), 2200)
-      }}
-    >
-      {said ?? 'Podeli rezultat'}
-    </button>
-  )
-}
-
-/** 3:07, or 47s when it never reaches a minute. */
-function clock(ms: number) {
-  const total = Math.round(ms / 1000)
-  const min = Math.floor(total / 60)
-  return min ? `${min}:${String(total % 60).padStart(2, '0')}` : `${total}s`
 }
 
 export function Game(props: Props) {
@@ -186,8 +150,9 @@ export function Game(props: Props) {
           photos={data.photos}
         />
 
+        {played && <Share round={played} label={topic.label} site={window.location.origin} />}
+
         <div className="intro__actions">
-          {played && <Share round={played} label={topic.label} />}
           <button className="btn" onClick={again}>
             Igraj ponovo
           </button>
