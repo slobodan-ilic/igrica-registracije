@@ -14,7 +14,7 @@ process.on('unhandledRejection',async e=>{console.error('\n'+(e?.message??e)); a
 
 const b=await launch({args:['--touch-events=enabled']})
 const pause=ms=>new Promise(r=>setTimeout(r,ms))
-const S=process.env.URL ?? 'http://localhost:5183'
+const S=process.env.URL ?? 'http://localhost:5173'
 const TIP_ROUTE='/hrvatska/igra?n=34'
 let fails=0
 const check=(label,ok,extra='')=>{console.log(`  ${ok?'✓':'✗'} ${label}${extra?' — '+extra:''}`); if(!ok)fails++}
@@ -794,6 +794,30 @@ if (process.env.URL) {
   const holds=Number(head.headers.get('cache-control')?.match(/max-age=(\d+)/)?.[1] ?? 0)
   check('and it is only cached until the country changes',
     holds>0 && holds<=86400, `${Math.round(holds/3600)}h`)
+}
+
+// what the server keeps of a round it is sent. The one check here with no
+// browser in it: the losses happen inside a serverless function, between the
+// payload going up and the row going down, where nothing on the page can see
+// them. A round played on the clock must still be a clocked round when another
+// device reads it back, and a question the clock ran out on must still be a
+// question that was asked.
+{
+  const { clean } = await import('../../api/rounds.js')
+  const played = {
+    id:'11111111-1111-1111-1111-111111111111', app:'tablice', topic:'srbija', seed:'a',
+    length:3, easy:false, kim:false, timed:true, score:1, ms:3000, at:Date.now(),
+    answers:[{code:'NS',picked:'NS',correct:true,ms:900},
+             {code:'BG',picked:'',correct:false,ms:2000},   // the clock ran out
+             {code:'KG',picked:'NI',correct:false,ms:100}],
+  }
+  const kept = clean(played)
+  check('the server keeps that a round was played on the clock', kept?.timed===true, String(kept?.timed))
+  check('and keeps the question the clock ran out on',
+    kept?.answers.length===3, `${kept?.answers.length} of 3 answers`)
+  check('with nothing picked, so it stays out of the confusions',
+    kept?.answers[1]?.picked==='' && kept?.answers[1]?.correct===false,
+    JSON.stringify(kept?.answers[1]))
 }
 
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')

@@ -29,6 +29,10 @@ create table if not exists round (
   length      int         not null,
   easy        boolean     not null,
   kim         boolean     not null,
+  -- Whether every question was against a clock. Kept because accuracy under
+  -- time pressure is a different number, and a round that arrives without this
+  -- can be compared with neither the clocked rounds nor the unclocked ones.
+  timed       boolean     not null default false,
   score       int         not null,
   ms          int         not null,
   finished_at timestamptz not null default now()
@@ -46,6 +50,11 @@ create table if not exists answer (
   ms      int     not null,
   primary key (round, step)
 );
+
+-- This file is the whole database and is meant to be re-runnable, so a column
+-- added after the fact is added here too. Existing rounds default to unclocked,
+-- which is what all but a handful of them were.
+alter table round add column if not exists timed boolean not null default false;
 
 create index if not exists round_by_player on round (player, finished_at desc);
 create index if not exists answer_wrong on answer (code, picked) where not correct;

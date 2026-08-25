@@ -17,8 +17,13 @@ const MAX_ANSWERS = 100
 const str = (v, max) => (typeof v === 'string' && v.length <= max ? v : null)
 const int = (v, max) => (Number.isInteger(v) && v >= 0 && v <= max ? v : null)
 
-/** A round is taken only if every field of it is what it claims to be. */
-function clean(r) {
+/**
+ * A round is taken only if every field of it is what it claims to be.
+ *
+ * Exported so the suite can put a round through it without a database: what
+ * this drops never reaches a row, and never comes back down to another device.
+ */
+export function clean(r) {
   const id = str(r?.id, 64)
   const topic = str(r?.topic, 40)
   const seed = str(r?.seed, 40)
@@ -39,12 +44,19 @@ function clean(r) {
       correct: typeof a?.correct === 'boolean' ? a.correct : null,
       ms: int(a?.ms, 86_400_000),
     }))
-    .filter((a) => a.code && a.picked && a.correct !== null && a.ms !== null)
+    // An empty pick is a question the clock ran out on, not a malformed answer:
+    // it is how running out is recorded, so that it never turns up among the
+    // confusions. Dropping it here made a round arrive on the next device
+    // shorter and more accurate than the one that was actually played.
+    .filter((a) => a.code && a.picked !== null && a.correct !== null && a.ms !== null)
 
   return {
     id, app, topic, seed, length, score, ms,
     easy: Boolean(r.easy),
     kim: Boolean(r.kim),
+    // Accuracy under a clock is a different number from accuracy without one,
+    // and a round that arrives without this is compared against neither.
+    timed: Boolean(r.timed),
     at: new Date(at ?? Date.now()).toISOString(),
     answers: clean_answers,
   }
@@ -68,7 +80,7 @@ async function serve(req, res, sql, player) {
 
   if (req.method === 'GET') {
     const rounds = await sql`
-      select r.id, r.app, r.topic, r.seed, r.length, r.easy, r.kim, r.score, r.ms,
+      select r.id, r.app, r.topic, r.seed, r.length, r.easy, r.kim, r.timed, r.score, r.ms,
              -- float8, or the driver hands epoch milliseconds back as a string
              (extract(epoch from r.finished_at) * 1000)::float8 as at,
              coalesce(
@@ -104,9 +116,9 @@ async function serve(req, res, sql, player) {
   for (const r of rounds) {
     // Nothing to update on conflict: a finished round does not change.
     const [row] = await sql`
-      insert into round (id, player, app, topic, seed, length, easy, kim, score, ms, finished_at)
+      insert into round (id, player, app, topic, seed, length, easy, kim, timed, score, ms, finished_at)
       values (${r.id}, ${player.sub}, ${r.app}, ${r.topic}, ${r.seed}, ${r.length},
-              ${r.easy}, ${r.kim}, ${r.score}, ${r.ms}, ${r.at})
+              ${r.easy}, ${r.kim}, ${r.timed}, ${r.score}, ${r.ms}, ${r.at})
       on conflict (id) do nothing
       returning id
     `
