@@ -108,7 +108,7 @@ const WRONG = '#f08b45'
  * posts to Instagram themselves. What the two must agree on is what they say,
  * and they do: both take their line from `headline` in result.ts.
  */
-function resultCard(shared: Shared, label: string) {
+function resultCard(shared: Shared, label: string, host: string) {
   const rows: boolean[][] = []
   for (let at = 0; at < shared.marks.length; at += 5) rows.push(shared.marks.slice(at, at + 5))
   // Ten questions draw at full size; seventy-four across Yugoslavia is fifteen
@@ -209,7 +209,9 @@ function resultCard(shared: Shared, label: string) {
           type: 'div',
           props: {
             style: { display: 'flex', fontSize: 30, color: '#5c626e' },
-            children: 'Probaj isti krug — tablice.vercel.app',
+            // Whichever quiz asked. This said tablice.vercel.app under a card
+            // drawn for the geography quiz, which is served from its own host.
+            children: `Probaj isti krug — ${host}`,
           },
         },
       ],
@@ -235,7 +237,7 @@ export default function handler(req: Request) {
   if (shared) {
     // The topic's own name, from the one place that holds them, rather than
     // the plate table — which has no entry for a river and quietly says Srbija.
-    return new ImageResponse(asElement(resultCard(shared, labelFor(shared.topic)) as Node), {
+    return new ImageResponse(asElement(resultCard(shared, labelFor(shared.topic), url.host) as Node), {
       width: W,
       height: H,
       headers: {
