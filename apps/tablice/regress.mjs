@@ -675,12 +675,12 @@ if (!process.env.URL) {
     painted.side===1080 && painted.colours>4, `${painted.side}px, ${painted.colours} colours`)
 
   if (offered) {
-  await p.click('.share__target[data-share]'); await pause(400)
-  const copied=await p.evaluate(()=>window.__copied ?? '')
-  check('copying says it did', (await p.$eval('.share__said',e=>e.textContent))==='Kopirano',
-    await p.$eval('.share__said',e=>e.textContent))
-
-  const lines=copied.split('\n')
+  // The result as text — the score, the grid, the link — is what goes to a
+  // platform now that the clipboard carries a link and nothing else. Read from
+  // the target that carries it rather than from a hook put there for the test.
+  const sent=decodeURIComponent(
+    new URL(await p.$eval('.share__target[title="WhatsApp"]',e=>e.href)).searchParams.get('text'))
+  const lines=sent.split('\n')
   check('it names the quiz and the score', /^Tablice · Crna Gora · \d\/3/.test(lines[0]), lines[0])
   check('one mark per question, in order',
     [...lines.slice(1,-1).join('')].filter(c=>c==='🟩'||c==='⬛').length===3 &&
@@ -695,14 +695,28 @@ if (!process.env.URL) {
     back)
   check('whose grid is the round that was just played',
     back.match(/g=([01]+)/)?.[1]==='100', back.match(/g=[01]+/)?.[0])
-  check('an ordinary round claims no challenge number', !/#\d/.test(copied), copied.split('\n')[0])
+
+  // What "kopiraj link" puts on the clipboard is a link. It used to be three
+  // lines of result with an address on the end, which is not what a button
+  // marked with a link hands you and is not what a chat app unfurls.
+  await p.evaluate(()=>{window.__copied=null})
+  await p.click('.share__target[data-share]'); await pause(500)
+  const onlyLink=await p.evaluate(()=>window.__copied ?? '')
+  check('and pressing it copies a link and nothing else',
+    /^https?:\/\/\S+$/.test(onlyLink.trim()) && !/\n/.test(onlyLink.trim()),
+    JSON.stringify(onlyLink))
+  check('and says so', (await p.$eval('.share__said',e=>e.textContent))==='Link kopiran',
+    await p.$eval('.share__said',e=>e.textContent))
+  check('an ordinary round claims no challenge number', !/#\d/.test(sent), sent.split('\n')[0])
 
   // nothing in it gives an answer away
   const round=await p.evaluate(()=>JSON.parse(localStorage.getItem('tablice.history'))[0])
   const secrets=[...new Set(round.answers.flatMap(a=>[a.code,a.picked]))]
   const names=feats.filter(f=>secrets.includes(f.code)).map(f=>f.name)
-  const leaked=[...secrets.filter(c=>copied.includes(c)),
-                ...names.filter(n=>copied.toLowerCase().includes(n.toLowerCase()))]
+  // Both of them: the text that goes out and the link that goes with it.
+  const both=`${sent}\n${onlyLink}`
+  const leaked=[...secrets.filter(c=>both.includes(c)),
+                ...names.filter(n=>both.toLowerCase().includes(n.toLowerCase()))]
   check('and none of it gives an answer away', leaked.length===0,
     leaked.length? `leaked ${leaked.join(', ')}` : `${secrets.length} codes and ${names.length} names checked`)
 
@@ -714,8 +728,8 @@ if (!process.env.URL) {
   const daily=JSON.parse(readFileSync(`data/${link.split('/')[1]}.json`,'utf8')).features.map(f=>f.properties)
   feats.length=0; feats.push(...daily)
   await play(link.replace(/n=\d+/,'n=2'))
-  await p.click('.share__target[data-share]'); await pause(400)
-  const shared=await p.evaluate(()=>window.__copied ?? '')
+  const shared=decodeURIComponent(
+    new URL(await p.$eval('.share__target[title="WhatsApp"]',e=>e.href)).searchParams.get('text'))
   check('the daily wears its number', /^Tablice #\d+ · \d\/2/.test(shared), shared.split('\n')[0])
   // The date is the seed, which is what lets the page it points at work out
   // that this was the challenge and offer /dnevni rather than a seeded copy.
@@ -921,6 +935,35 @@ if (process.env.URL) {
   check('and offers the challenge rather than a seeded copy of it',
     /href="[^"]*\/dnevni"/.test(challenge.html),
     challenge.html.match(/class="r__go" href="[^"]*"/)?.[0] ?? 'nothing offered')
+
+  // A short link, which is the whole reason there is a table for this: an
+  // address somebody will actually send, rather than the round written out.
+  const made=await fetch(`${S}/api/result`,{method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({app:'tablice',topic:'crnagora',seed:'kratko',easy:false,kim:false,
+      timed:false,grid:'1011',seconds:52})})
+  const {id}=await made.json()
+  check('a result can be kept, and gets a short id for it',
+    made.ok && /^[0-9a-hjkmnp-tv-z]{8}$/.test(id ?? ''), `${made.status} · ${id}`)
+
+  const again=await (await fetch(`${S}/api/result`,{method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({app:'tablice',topic:'crnagora',seed:'kratko',easy:false,kim:false,
+      timed:false,grid:'1011',seconds:52})})).json()
+  check('and the same result kept twice is the same link, not a second one',
+    again.id===id, `${id} vs ${again.id}`)
+
+  const shortPage=await crawl(`/r/${id}`)
+  check('the short link opens the result it stands for',
+    /3\/4/.test(tag(shortPage.html,'og:title')) && /g=1011/.test(tag(shortPage.html,'og:image')),
+    `${tag(shortPage.html,'og:title')} · ${tag(shortPage.html,'og:image')}`)
+  check('and offers the round behind it',
+    /href="[^"]*\/crnagora\/igra\?[^"]*s=kratko/.test(shortPage.html),
+    shortPage.html.match(/class="r__go" href="[^"]*"/)?.[0] ?? 'nothing')
+
+  const nonsense=await fetch(`${S}/r/zzzzzzzz`,{redirect:'manual'})
+  check('an id that stands for nothing previews nothing',
+    nonsense.status>=300 && nonsense.status<400, `${nonsense.status}`)
 
   const clocked=await crawl('/r/crnagora?s=deljenje&c=1&g=101&q=41')
   check('and how it was played survives the trip',

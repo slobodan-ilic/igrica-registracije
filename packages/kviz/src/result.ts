@@ -74,12 +74,26 @@ export function decode(topic: string, params: URLSearchParams): Shared | null {
 export const score = (r: Shared) => r.marks.filter(Boolean).length
 
 /**
+ * Which quiz a topic belongs to. Two apps share this engine and therefore share
+ * every line of this file, so a result from the geography quiz must not go out
+ * calling itself Tablice — which it did, because the name was written into the
+ * headline as a constant.
+ */
+const GEOGRAFIJA = new Set(['okruzi', 'reke', 'planine', 'banje'])
+
+export const isGeografija = (topic: string) => GEOGRAFIJA.has(topic)
+
+/** What the quiz is called, in a result's own line and on its plate. */
+export const quizName = (topic: string) => (isGeografija(topic) ? 'Geografija' : 'Tablice')
+
+/**
  * Which challenge this was, or null. The same three tests the app makes: the
  * seed is a date, the country is the one that date deals, and it was played the
  * shape the challenge deals — anything else is a practice round that happens to
  * share a seed.
  */
 export function challengeNumber(r: Shared): number | null {
+  if (isGeografija(r.topic)) return null
   if (r.easy || r.timed) return null
   if (!/^\d{4}-\d{2}-\d{2}$/.test(r.seed)) return null
   if (r.topic !== countryFor(r.seed)) return null
@@ -95,7 +109,8 @@ export function spell(seconds: number) {
 /** "Tablice #3 · 10/10 · 2:50" — one line, the same one everywhere it appears. */
 export function headline(r: Shared, label: string) {
   const n = challengeNumber(r)
-  const what = n === null ? `Tablice · ${label}` : `Tablice #${n}`
+  const name = quizName(r.topic)
+  const what = n === null ? `${name} · ${label}` : `${name} #${n}`
   const time = r.seconds > 0 ? ` · ${spell(r.seconds)}` : ''
   return `${what} · ${score(r)}/${r.marks.length}${time}`
 }

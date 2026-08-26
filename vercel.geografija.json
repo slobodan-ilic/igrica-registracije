@@ -5,7 +5,11 @@
   "outputDirectory": "apps/geografija/dist",
   "rewrites": [
     {
-      "source": "/((?!api/|_vercel/).*)",
+      "source": "/r/:topic",
+      "destination": "/api/share?t=:topic"
+    },
+    {
+      "source": "/((?!api/|_vercel/|r/).*)",
       "destination": "/index.html"
     }
   ]

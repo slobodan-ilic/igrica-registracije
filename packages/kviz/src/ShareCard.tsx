@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { drawCard, toFile } from './card'
-import { canSendFile, send, sendFile, shareLink, shareText, targets, titleOf } from './share'
+import { canSendFile, copyLink, sendFile, shareLink, shareText, shorten, targets, titleOf } from './share'
 import { numberOf } from './challenge'
+import { quizName } from './result'
 import type { Played } from './history'
 
 /**
@@ -52,16 +53,23 @@ export function Share({ round, label, site }: { round: Played; label: string; si
   const [said, setSaid] = useState<string | null>(null)
 
   const daily = numberOf(round)
-  const link = shareLink(round, { site })
-  const text = shareText(round, { label, daily, link })
-  const title = titleOf(round, { label, daily })
+  /**
+   * The long form carries the whole result in its own address and needs nothing
+   * kept anywhere, so it is what everything points at until the short one comes
+   * back. Both open the same page; only one of them is worth sending.
+   */
+  const [short, setShort] = useState<string | null>(null)
+  const link = short ?? shareLink(round, { site })
+  const text = shareText(round, { label, link })
+  const title = titleOf(round, { label })
 
   // Drawn once the summary is on screen, and turned into a file straight away
   // so that pressing the sheet has nothing to wait for.
   useEffect(() => {
     if (!canvas.current) return
     drawCard(canvas.current, {
-      title: daily === null ? `Tablice · ${label}` : `Tablice #${daily}`,
+      title,
+      word: quizName(round.topic).toUpperCase(),
       score: round.score,
       of: round.answers.length,
       ms: round.ms,
@@ -74,6 +82,16 @@ export function Share({ round, label, site }: { round: Played; label: string; si
       live = false
     }
   }, [round, label, daily, link])
+
+  // Asked for once the round is over and only then. Nothing about a person goes
+  // with it — which round, which questions went right, how long it took.
+  useEffect(() => {
+    let live = true
+    void shorten(round, site).then((made) => live && made && setShort(made))
+    return () => {
+      live = false
+    }
+  }, [round, site])
 
   const say = (what: string) => {
     setSaid(what)
@@ -156,15 +174,14 @@ export function Share({ round, label, site }: { round: Played; label: string; si
           <button
             className="share__target btn--share"
             type="button"
-            data-share={text}
-            title="Kopiraj rezultat"
+            data-share={link}
+            title="Kopiraj link"
             onClick={async () => {
-              const how = await send(text)
-              say(how === 'failed' ? 'Nije uspelo' : how === 'shared' ? 'Poslato' : 'Kopirano')
+              say((await copyLink(link)) === 'copied' ? 'Link kopiran' : 'Nije uspelo')
             }}
           >
             <Mark d={COPY} />
-            <span className="share__name">Kopiraj</span>
+            <span className="share__name">Link</span>
           </button>
         </li>
       </ul>

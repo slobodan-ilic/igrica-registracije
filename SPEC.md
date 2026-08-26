@@ -138,6 +138,18 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   picture saved, or the text copied. Not a button. A button that quietly copies
   was the whole of this until 25 August, and it neither said what it had done
   nor offered anywhere to put it.
+- **Kopiraj puts a link on the clipboard, and only a link.** It used to hand
+  over the whole result — three lines with an address on the end — which is not
+  what a control marked with a link gives you, and not what an address bar or a
+  post does anything useful with. The score and the grid still travel, to the
+  platforms that take text: X, WhatsApp, Telegram.
+- **The link is short**, `/r/ab12cd34`, because a link nobody would send is not
+  a shared result. The result is kept server-side to make that possible — no
+  account, no player column, nothing that belongs to a person: which round it
+  was, which questions went right, how long it took. The id is the front of a
+  hash of those, so sharing one result twice writes one row and gives one link.
+  If the store cannot be reached the long self-contained form is used instead,
+  and everything still works.
 - **A result has an address of its own**, `/r/…`, and it previews as what
   happened. This took three tries. The bare hostname dropped whoever opened it
   on the front page. The round's own address at least dealt them the questions —
@@ -212,17 +224,21 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 116 checks across the two apps — 105 and 11, counted by running them rather
+- 122 checks across the two apps — 111 and 11, counted by running them rather
   than by counting the lines that call them — each written to fail before it was
   made to pass; the daily's, the preview's, the share's and the round trip
   through the server were each watched failing with the feature removed. No
-  single run of tablice does all 105: thirty want a dev server, twenty-one want
-  a deployment, and the fifty-four left run either way.
+  single run of tablice does all 111: thirty-one want a dev server, twenty-six
+  want a deployment, and the fifty-four left run either way.
 - Two of them were written, watched passing, and rewritten because they were
   passing for the wrong reason — one fetched a link from inside the app, where
   every wrong answer resolves against the dev server and comes back as the page
   shell; the other fetched an HTML-escaped URL, so it graded the country's plate
   while believing it was looking at a result.
+- The share page and its picture serve both quizzes. They did not: every line
+  of this is engine code that the geography quiz runs too, and it was sending
+  results that called themselves Tablice to a route only tablice had. The name
+  on the card and in the line comes from the topic now.
 - `api/` is type-checked, as of 26 August. It never was, and it had a real error
   in it — two serverless functions that nothing checked before a deploy.
 

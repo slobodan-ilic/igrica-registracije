@@ -47,6 +47,8 @@ export type Result = {
   ms: number
   /** One per question, in the order they were asked. */
   marks: boolean[]
+  /** What the quiz is called, on the plate: TABLICE, or GEOGRAFIJA. */
+  word: string
   /**
    * Where to go and play it. Only the host is printed: someone looking at this
    * picture on Instagram cannot copy a query string out of it, and a line of
@@ -85,7 +87,7 @@ function rounded(c: CanvasRenderingContext2D, x: number, y: number, w: number, h
  * result would be wrong in a way people from here notice immediately. Which
  * country it was is in the title instead.
  */
-function plate(c: CanvasRenderingContext2D, mid: number, top: number) {
+function plate(c: CanvasRenderingContext2D, mid: number, top: number, word: string) {
   const w = 880
   const h = 216
   const x = mid - w / 2
@@ -110,7 +112,7 @@ function plate(c: CanvasRenderingContext2D, mid: number, top: number) {
   c.font = `700 116px ${FONT}`
   c.textAlign = 'center'
   c.textBaseline = 'middle'
-  c.fillText('TABLICE', x + 22 + band + (w - 44 - band) / 2, top + h / 2 + 6)
+  c.fillText(word, x + 22 + band + (w - 44 - band) / 2, top + h / 2 + 6)
 }
 
 /**
@@ -148,7 +150,7 @@ export function drawCard(canvas: HTMLCanvasElement, result: Result) {
   c.fillStyle = PAPER
   c.fillRect(0, 0, SIDE, SIDE)
 
-  plate(c, SIDE / 2, 104)
+  plate(c, SIDE / 2, 104, result.word)
 
   const mid = SIDE / 2
   c.textAlign = 'center'

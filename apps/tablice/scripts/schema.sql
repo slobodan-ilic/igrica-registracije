@@ -56,5 +56,29 @@ create table if not exists answer (
 -- which is what all but a handful of them were.
 alter table round add column if not exists timed boolean not null default false;
 
+-- A result somebody shared, so that the link they hand out can be short and can
+-- be opened by anyone.
+--
+-- Nothing here belongs to a person: which round it was, which questions went
+-- right, and how long it took. There is no player column and there is nothing
+-- to join one to. That is what lets it be written without an account, which it
+-- has to be — a result nobody can open is not a shared result.
+--
+-- The id is the first part of a hash of the row's own contents, so sharing the
+-- same result twice writes one row and hands back one link.
+create table if not exists shared (
+  id      text        primary key,
+  app     text        not null,
+  topic   text        not null,
+  seed    text        not null,
+  easy    boolean     not null,
+  kim     boolean     not null,
+  timed   boolean     not null,
+  -- One character per question, '1' right and '0' wrong, in the order asked.
+  grid    text        not null,
+  seconds int         not null,
+  made_at timestamptz not null default now()
+);
+
 create index if not exists round_by_player on round (player, finished_at desc);
 create index if not exists answer_wrong on answer (code, picked) where not correct;

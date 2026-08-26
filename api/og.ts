@@ -15,7 +15,7 @@ import { ImageResponse } from '@vercel/og'
 // The .js extension is what Node's own module resolution wants; it resolves
 // to rota.ts at build time.
 import { ZONE, countryFor, today } from '../packages/kviz/src/rota.js'
-import { decode, headline, score, type Shared } from '../packages/kviz/src/result.js'
+import { decode, headline, quizName, score, type Shared } from '../packages/kviz/src/result.js'
 
 export const config = { runtime: 'edge' }
 
@@ -161,7 +161,7 @@ function resultCard(shared: Shared, label: string) {
                     fontWeight: 700,
                     color: '#101215',
                   },
-                  children: 'TABLICE',
+                  children: quizName(shared.topic).toUpperCase(),
                 },
               },
             ],

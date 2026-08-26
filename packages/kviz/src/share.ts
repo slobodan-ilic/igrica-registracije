@@ -1,5 +1,4 @@
-import { clock } from './format'
-import { shareHref, type Shared } from './result'
+import { headline, shareHref, type Shared } from './result'
 import type { Played } from './history'
 
 /**
@@ -36,20 +35,21 @@ function grid(round: Played) {
  */
 export function shareText(
   round: Played,
-  { label, daily, link }: { label: string; daily: number | null; link: string },
+  { label, link }: { label: string; link: string },
 ) {
-  return `${titleOf(round, { label, daily })}\n${grid(round)}\n${link}`
+  return `${titleOf(round, { label })}\n${grid(round)}\n${link}`
 }
 
-/** "Tablice #2", or "Tablice · Crna Gora · 7/10 · 2:50" when it was not one. */
-export function titleOf(
-  round: Played,
-  { label, daily }: { label: string; daily: number | null },
-) {
-  const what = daily === null ? `Tablice · ${label}` : `Tablice #${daily}`
-  const score = `${round.score}/${round.answers.length}`
-  const time = round.ms > 0 ? ` · ${clock(round.ms)}` : ''
-  return `${what} · ${score}${time}`
+/**
+ * "Tablice #2 · 10/10 · 2:50", and the one line every rendering of a result
+ * prints — the pasted text, the card, the page and the picture.
+ *
+ * Deferred to result.ts rather than written again here, because it was written
+ * again here: this said Tablice for a round of the geography quiz, which shares
+ * every line of this file.
+ */
+export function titleOf(round: Played, { label }: { label: string }) {
+  return headline(sharedOf(round), label)
 }
 
 /** The round, in the shape a link can carry it. */
@@ -197,5 +197,53 @@ export async function sendFile(file: File, text: string): Promise<'shared' | 'fa
   } catch (e) {
     // Dismissing the sheet is a decision, not a failure.
     return (e as Error)?.name === 'AbortError' ? 'shared' : 'failed'
+  }
+}
+
+/**
+ * Asks the server to keep this result, so that the link handed out can be short.
+ *
+ * Best effort, and silent when it fails: the long form carries the whole result
+ * in its own address and works without anything being stored, so a server that
+ * is unwell costs a tidy link rather than the ability to share at all.
+ */
+export async function shorten(round: Played, site: string): Promise<string | null> {
+  try {
+    const r = await fetch('/api/result', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        app: round.app,
+        topic: round.topic,
+        seed: round.seed,
+        easy: round.easy,
+        kim: round.kim,
+        timed: round.timed,
+        grid: round.answers.map((a) => (a.correct ? 1 : 0)).join(''),
+        seconds: round.ms > 0 ? Math.round(round.ms / 1000) : 0,
+      }),
+    })
+    if (!r.ok) return null
+    const { id } = (await r.json()) as { id?: string }
+    return id ? `${site}/r/${id}` : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Puts a link on the clipboard, and only a link.
+ *
+ * "Copy" used to hand over the whole result — three lines of it, with the
+ * address on the end. Pasted into an address bar that is not a link, pasted
+ * into a post it is a wall of text with a URL trailing after it, and what
+ * someone pressing a button marked with a link expects is a link.
+ */
+export async function copyLink(link: string): Promise<'copied' | 'failed'> {
+  try {
+    await navigator.clipboard.writeText(link)
+    return 'copied'
+  } catch {
+    return legacyCopy(link) ? 'copied' : 'failed'
   }
 }
