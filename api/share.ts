@@ -11,7 +11,7 @@
 // reads the tags and stops; a person reads the page and presses the button.
 
 import { neon } from '@neondatabase/serverless'
-import { decode, encode, headline, playHref, score, spell, type Shared } from '../packages/kviz/src/result.js'
+import { decode, encode, headline, LABELS, playHref, score, spell, type Shared } from '../packages/kviz/src/result.js'
 
 export const config = { runtime: 'edge' }
 
@@ -45,21 +45,6 @@ async function stored(id: string): Promise<Shared | null> {
     console.error('share:', e)
     return null
   }
-}
-
-/** The same names the app gives its topics, and the only ones this will serve. */
-const LABELS: Record<string, string> = {
-  srbija: 'Srbija',
-  hrvatska: 'Hrvatska',
-  makedonija: 'Makedonija',
-  crnagora: 'Crna Gora',
-  slovenija: 'Slovenija',
-  jugoslavija: 'Jugoslavija',
-  // The geography quiz shares this engine, so it shares this page.
-  okruzi: 'Okruzi',
-  reke: 'Reke',
-  planine: 'Planine',
-  banje: 'Banje',
 }
 
 const escape = (s: string) =>

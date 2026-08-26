@@ -83,6 +83,30 @@ const GEOGRAFIJA = new Set(['okruzi', 'reke', 'planine', 'banje'])
 
 export const isGeografija = (topic: string) => GEOGRAFIJA.has(topic)
 
+/**
+ * What each topic is called in a result's own line.
+ *
+ * Here rather than in either function that prints one, because both print one:
+ * the page a shared link opens and the picture that page tells a crawler to
+ * draw. The picture had its own idea and no entry for the geography quiz, so it
+ * fell back to Serbia and drew "Geografija · Srbija" under a page that said
+ * "Geografija · Reke".
+ */
+export const LABELS: Record<string, string> = {
+  srbija: 'Srbija',
+  hrvatska: 'Hrvatska',
+  makedonija: 'Makedonija',
+  crnagora: 'Crna Gora',
+  slovenija: 'Slovenija',
+  jugoslavija: 'Jugoslavija',
+  okruzi: 'Okruzi',
+  reke: 'Reke',
+  planine: 'Planine',
+  banje: 'Banje',
+}
+
+export const labelFor = (topic: string) => LABELS[topic] ?? topic
+
 /** What the quiz is called, in a result's own line and on its plate. */
 export const quizName = (topic: string) => (isGeografija(topic) ? 'Geografija' : 'Tablice')
 

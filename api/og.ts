@@ -15,7 +15,7 @@ import { ImageResponse } from '@vercel/og'
 // The .js extension is what Node's own module resolution wants; it resolves
 // to rota.ts at build time.
 import { ZONE, countryFor, today } from '../packages/kviz/src/rota.js'
-import { decode, headline, quizName, score, type Shared } from '../packages/kviz/src/result.js'
+import { decode, headline, labelFor, quizName, score, type Shared } from '../packages/kviz/src/result.js'
 
 export const config = { runtime: 'edge' }
 
@@ -233,7 +233,9 @@ export default function handler(req: Request) {
   // link to a country previews as.
   const shared = decode(topic, url.searchParams)
   if (shared) {
-    return new ImageResponse(asElement(resultCard(shared, plate.label) as Node), {
+    // The topic's own name, from the one place that holds them, rather than
+    // the plate table — which has no entry for a river and quietly says Srbija.
+    return new ImageResponse(asElement(resultCard(shared, labelFor(shared.topic)) as Node), {
       width: W,
       height: H,
       headers: {
