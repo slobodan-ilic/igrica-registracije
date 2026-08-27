@@ -24,8 +24,16 @@ deliberately out of scope.
 - **A round is its URL.** Topic, length, seed, difficulty, clock and the Kosovo
   set all live in the query string, so a link is the same questions in the same
   order for whoever opens it. Anything that changes a round belongs there too.
-- **Never average incomparable rounds.** Four choices against the whole map, or
-  a clock against none, are different games; SPEC.md section 4 has the rules.
+  A round of your own mistakes carries its deck written out — `?d=KG.BČ.ČA.NS` —
+  rather than a rule, because the rule reads one browser's history and would
+  deal a different round to whoever opened the link. `/:topic/greske` is a
+  doorway that deals one and replaces itself with it.
+- **Never average incomparable rounds.** Four choices against the whole map, a
+  clock against none, or a deck chosen from your mistakes against one dealt at
+  random, are different games; SPEC.md section 5 has the rules. A new kind of
+  round means a column on `round`, a field in `clean()`, and a filter in
+  `against()` — `timed` was missing all three and dropped out of the
+  comparison silently.
 - **An answer records what was picked**, not merely whether it was right. That is
   the whole basis of the confusion pairs, and of practising your mistakes.
 - **Local first.** Progress is kept in the browser whether or not anyone is
@@ -40,17 +48,23 @@ deliberately out of scope.
   layout bugs.
 - `npm run build` — both apps, with `tsc --noEmit` first.
 - `node regress.mjs` in either app, against its own dev server (tablice 5173,
-  geografija 5174, both pinned) or `URL=` a deployment. 122 checks: 111 in
+  geografija 5174, both pinned) or `URL=` a deployment. 136 checks: 125 in
   tablice, 11 in geografija.
-- **No single run of tablice executes all 111.** Against a dev server 85 run;
-  against a deployment, 80. Thirty-one need the dev server — a stubbed sign-in,
-  syncing, the clock, the clipboard, the empty progress page — and nine need a
-  deployment, because the preview tags are written into the built HTML, the
-  picture is drawn by a function under `api/`, and a shared result is a whole
-  page served by one. **Both, before believing a
+- **No single run of tablice executes all 125.** Against a dev server 99 run;
+  against a deployment, 94. Thirty-one need the dev server — a stubbed sign-in,
+  syncing, the clock, the clipboard, the empty progress page — and twenty-six
+  need a deployment, because the preview tags are written into the built HTML,
+  the picture is drawn by a function under `api/`, and a shared result is a
+  whole page served by one. **Both, before believing a
   release**, and count from the run rather than from the calls to `check()`:
   they sit inside `if (process.env.URL)` either way, which is how the number in
-  this file was wrong twice.
+  this file was wrong twice — and this line said "nine" until 27 August, when
+  it should always have said twenty-six.
+- 99 was counted from two dev runs on 27 August. 94 was not counted: the
+  network went down mid-run. It is 99 less the thirty-one that want a dev
+  server plus the twenty-six that want a deployment, which is the arithmetic
+  that reproduces the previous 85 / 80 / 111 exactly. **Confirm it on the next
+  run against a deployment**, and correct it here if it is out.
 
 **Write the check so it fails first.** Several checks in this suite were
 passing vacuously until that was verified — one tested a tooltip in a browser

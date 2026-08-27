@@ -22,6 +22,15 @@ export type Played = {
   kim: boolean
   /** Whether every question was against a clock. */
   timed: boolean
+  /**
+   * Whether the deck was chosen rather than dealt — a round of the codes you
+   * keep getting wrong. Kept because such a round is systematically harder than
+   * a random one of the same length, so averaging it in with the rest would
+   * drag every figure on the progress page down and make "najbolje do sada"
+   * mean nothing. Same rule as easy and the clock: never average incomparable
+   * rounds.
+   */
+  practice?: boolean
   score: number
   /** How long the questions took altogether, in milliseconds. */
   ms: number

@@ -6,7 +6,8 @@ import { hasChooser, href, linkProps, navigate, type Round } from './router'
 import { joinSr } from './deck'
 import { plural } from './sr'
 import { randomSeed } from './deck'
-import { record, sync, type Played } from './history'
+import { history, record, sync, type Played } from './history'
+import { due, ENOUGH } from './practice'
 import { against } from './stats'
 import { Share } from './ShareCard'
 import { clock } from './format'
@@ -67,13 +68,31 @@ function InContext({ round }: { round: Played }) {
 
 export function Game(props: Props) {
   const { topic, data, codes, byCode, centroids, playable, touch, theme, onTheme } = props
-  const { length, easy, seed, timed } = props.round
+  const { length, easy, seed, timed, deck: dealt } = props.round
+  // A round whose deck was chosen rather than dealt: the codes still owed.
+  const practice = Boolean(dealt?.length)
   // Against however many places are actually live, which is four on easy.
   const seconds = timed ? budget(easy ? CHOICES : codes.length) : 0
-  const round = useRound({ codes, byCode, centroids, length, easy, seed, seconds })
+  const round = useRound({ codes, byCode, centroids, length, easy, seed, seconds, dealt })
 
   // A fresh seed is a fresh round, and the URL says so — no remount trickery.
-  const again = () => navigate(href.game(topic.id, { ...props.round, seed: randomSeed() }))
+  // Except after a practice round, where "again" means the ones still owed
+  // *now* — some of what was just asked has been answered right twice and has
+  // left the list, which is the whole point of it.
+  const again = () =>
+    navigate(
+      practice && canPractise
+        ? href.practice(topic.id)
+        : // Written out rather than spread from this round, so a chosen deck is
+          // never carried into what is meant to be a fresh one.
+          href.game(topic.id, {
+            length,
+            seed: randomSeed(),
+            easy,
+            kim: props.round.kim,
+            timed,
+          }),
+    )
 
   // Kept the moment it is over, and only then: an abandoned round is not a
   // result. The guard is because `done` stays true while the summary is on
@@ -93,13 +112,26 @@ export function Game(props: Props) {
       easy,
       kim: props.round.kim,
       timed,
+      practice,
       score: round.score,
       ms: round.answers.reduce((t, a) => t + a.ms, 0),
       answers: round.answers,
     }))
     // Signed out this is refused and quietly does nothing, which is the point.
     void sync()
-  }, [round.done, round.answers, round.score, topic.id, seed, length, easy, timed, props.round.kim])
+  }, [round.done, round.answers, round.score, topic.id, seed, length, easy, timed, practice, props.round.kim])
+
+  /**
+   * What is still owed for this topic, counted only once the round just played
+   * has been written down — so a code answered right twice just now has already
+   * left the list. That shrinking is the thing worth showing: it is what makes
+   * this a study tool rather than a harder round.
+   */
+  const owed = useMemo(
+    () => (played ? due(history(), topic.id, playable) : []),
+    [played, topic.id, playable],
+  )
+  const canPractise = owed.length >= ENOUGH
 
   const describe = useCallback(
     (regionCode: string, isAnswered: boolean) => {
@@ -125,7 +157,7 @@ export function Game(props: Props) {
     return (
       <div className="intro">
         <BackLink to={href.setup(topic.id)} label={topic.label} />
-        <p className="intro__eyebrow">Kraj partije</p>
+        <p className="intro__eyebrow">{practice ? 'Kraj vežbe' : 'Kraj partije'}</p>
         <h1 className="intro__title">
           {round.score} / {round.deck.length} <span className="intro__accent">· {pct}%</span>
         </h1>
@@ -141,7 +173,16 @@ export function Game(props: Props) {
           )}
         </p>
 
-        {played && <InContext round={played} />}
+        {/* A practice round is not comparable with anything — its deck was
+            chosen to be hard — so it gets the list instead of the average. */}
+        {played && !practice && <InContext round={played} />}
+        {played && practice && (
+          <p className={`context${owed.length ? '' : ' context--best'}`}>
+            {owed.length === 0
+              ? 'Spisak je prazan — sve ste pogodili dva puta zaredom.'
+              : `Ostalo je još ${owed.length} na spisku za vežbu.`}
+          </p>
+        )}
 
         <ContactSheet
           topic={topic.id}
@@ -154,8 +195,15 @@ export function Game(props: Props) {
 
         <div className="intro__actions">
           <button className="btn" onClick={again}>
-            Igraj ponovo
+            {practice && canPractise ? 'Vežbaj ponovo' : 'Igraj ponovo'}
           </button>
+          {/* Offered here because this is the moment of highest intent: you
+              have just seen exactly what you did not know. */}
+          {!practice && canPractise && (
+            <a className="btn btn--drill" {...linkProps(href.practice(topic.id))}>
+              Vežbaj greške · {owed.length}
+            </a>
+          )}
           <a className="btn" {...linkProps(href.setup(topic.id))}>
             Promeni podešavanja
           </a>

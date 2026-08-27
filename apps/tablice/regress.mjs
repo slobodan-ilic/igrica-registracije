@@ -858,6 +858,145 @@ if (process.env.URL) {
   check('with nothing picked, so it stays out of the confusions',
     kept?.answers[1]?.picked==='' && kept?.answers[1]?.correct===false,
     JSON.stringify(kept?.answers[1]))
+
+  // Same shape of loss again: a practice round that arrives without saying so
+  // is averaged in with the ordinary ones on the next device, and it is harder
+  // than they are on purpose.
+  check('and keeps that a round was dealt from the player\'s own mistakes',
+    clean({...played, practice:true})?.practice===true &&
+    clean(played)?.practice===false,
+    `${clean({...played, practice:true})?.practice} / ${clean(played)?.practice}`)
+
+  // The longest round either app deals is Yugoslavia's 125 towns, and a
+  // geography answer is its name rather than a two-letter code. Both were
+  // being trimmed on the way up.
+  const long = clean({...played, length:125, score:0, answers:
+    Array.from({length:125},(_,i)=>({code:`severnobanatski-okrug-${i}`,picked:'x',correct:false,ms:9}))})
+  check('a round of the whole map arrives whole',
+    long?.answers.length===125 && long?.answers[0]?.code==='severnobanatski-okrug-0',
+    `${long?.answers.length} of 125, first code ${long?.answers[0]?.code ?? 'dropped'}`)
+}
+
+// practising your mistakes: a round dealt from what this browser keeps getting
+// wrong. Seeded rather than played, because the rule under test is about
+// history across several rounds and playing three of them would test the map.
+//
+// The fixture, oldest first:
+//   NS KG BG ČA BČ  all missed
+//   BG ČA            right once
+//   BG               right again, KG missed a second time
+// so BG has graduated, ČA has one of the two it needs, and KG is the worst.
+{
+  const at = Date.now() - 3_000_000
+  const answer = (code, picked) => ({ code, picked, correct: code === picked, ms: 900 })
+  const round = (n, answers) => ({
+    id: `22222222-2222-2222-2222-00000000000${n}`, app:'tablice', topic:'srbija',
+    seed:`vezba${n}`, length:answers.length, easy:false, kim:false, timed:false,
+    score:answers.filter(a=>a.correct).length, ms:answers.length*900, at: at + n*1000, answers,
+  })
+  // Newest first, the order history() keeps them in — and deliberately not the
+  // order they were played, since that is what the sort inside is for.
+  const seeded = [
+    round(3, [answer('BG','BG'), answer('KG','NS')]),
+    round(2, [answer('BG','BG'), answer('ČA','ČA')]),
+    round(1, [answer('NS','KG'), answer('KG','NS'), answer('BG','NS'),
+              answer('ČA','NS'), answer('BČ','NS')]),
+  ]
+
+  // Seeded before any of the app's own scripts run. Setting storage after a load
+  // races whatever the app writes on mount — the theme is written back by
+  // usePref within the frame, and this is the same hazard one key over.
+  const withHistory = async (rounds) => {
+    const ctx = await b.createBrowserContext()
+    const p = await ctx.newPage()
+    await p.setViewport({width:1440,height:900})
+    await p.evaluateOnNewDocument(
+      h => localStorage.setItem('tablice.history', h), JSON.stringify(rounds))
+    return { ctx, p }
+  }
+
+  const { ctx, p } = await withHistory(seeded)
+  await p.goto(`${S}/srbija`,{waitUntil:'networkidle0'}); await pause(700)
+
+  const pill = await p.$eval('.drill', e => e.textContent.trim()).catch(() => null)
+  check('the way in says how much is owed', pill === 'Vežbaj greške 4', String(pill))
+
+  // Guarded, because a run against a deployment that does not have this yet
+  // finds no pill — and an unguarded .click() on null ends the whole run
+  // instead of failing the checks below it, which is how this was written the
+  // first time.
+  await p.evaluate(() => document.querySelector('.drill')?.click()); await pause(900)
+  const dealt = new URL(p.url()).searchParams.get('d')
+  // Worst first, then most recently missed, then by name. KG was missed twice.
+  check('the round it deals is the codes still owed, worst first',
+    dealt === 'KG.BČ.ČA.NS', String(dealt))
+  check('a code answered right twice running has left the list',
+    !String(dealt).split('.').includes('BG'), String(dealt))
+  check('and one answered right only once has not',
+    String(dealt).split('.').includes('ČA'), String(dealt))
+  check('the round is dealt, not the doorway left in the bar',
+    /\/srbija\/igra\?/.test(p.url()) && !/greske/.test(p.url()), p.url())
+
+  const first = await p.$eval('.plate__code', e => e.textContent).catch(() => 'no round')
+  check('and it asks the worst of them first', first === 'KG', first)
+
+  // The address is the round, even for a deck nobody else could have derived:
+  // this browser has no history at all and must be dealt the same questions.
+  const other = await b.createBrowserContext()
+  const q = await other.newPage()
+  await q.setViewport({width:1440,height:900})
+  await q.goto(p.url(),{waitUntil:'networkidle0'}); await pause(700)
+  const kept = await q.evaluate(() => localStorage.getItem('tablice.history'))
+  const asks = await q.$eval('.plate__code', e => e.textContent).catch(() => 'no round')
+  check('a practice round travels: no history, and the same questions',
+    !kept && asks === 'KG', `${kept ? 'has history' : 'no history'} · asks ${asks}`)
+  await other.close()
+
+  // Play it out, all four right. Three of them are being answered right for the
+  // first time since they were missed and stay on the list; ČA already had one
+  // from the fixture, so this is its second in a row and it leaves. Which is
+  // the rule seen from the other side — and this check was first written
+  // expecting four, and was wrong.
+  const feats = JSON.parse(readFileSync('data/srbija.json','utf8')).features.map(f=>f.properties)
+  for (let i=0;i<4;i++) {
+    const asked = await p.evaluate(() => document.querySelector('.plate__code')?.textContent)
+    const code = feats.find(f => f.code === asked)?.code
+    if (!code) break
+    const pt = await p.evaluate(c => {
+      const el = document.querySelector(`[data-code="${c}"]`)
+      const r = el.getBoundingClientRect()
+      for(let fy=0.25;fy<0.85;fy+=0.06)for(let fx=0.25;fx<0.85;fx+=0.06){
+        const x=r.x+r.width*fx, y=r.y+r.height*fy
+        if(document.elementFromPoint(x,y)?.closest('[data-code]')===el) return {x,y}}
+      return {x:r.x+r.width/2, y:r.y+r.height/2}}, code)
+    await p.mouse.click(pt.x, pt.y); await pause(1300)
+  }
+  await pause(700)
+
+  const said = await p.evaluate(() => document.querySelector('.intro__eyebrow')?.textContent ?? 'nothing')
+  check('a practice round says which kind of round it was', said === 'Kraj vežbe', said)
+  const after = await p.evaluate(() => JSON.parse(localStorage.getItem('tablice.history')||'[]'))
+  check('and is written down as one, so it is never averaged in with the rest',
+    after[0]?.practice === true && after[0]?.answers?.length === 4,
+    `practice=${after[0]?.practice}, ${after[0]?.answers?.length} answers`)
+  // Read once and guarded: with the feature removed there is no line at all,
+  // and an unguarded $eval throws and takes the rest of the run down with it
+  // instead of reporting one failed check.
+  const left = await p.$eval('.context', e => e.textContent).catch(() => 'no line')
+  check('one right answer keeps a code on the list, the second takes it off',
+    left.includes('još 3'), left)
+  await ctx.close()
+
+  // Too little owed and there must be nothing to press: three questions is not
+  // a round, and offering one teaches whoever pressed it that this is not for
+  // them.
+  const thin = await withHistory([round(1, [answer('NS','KG'), answer('KG','NS'), answer('BG','NS')])])
+  await thin.p.goto(`${S}/srbija`,{waitUntil:'networkidle0'}); await pause(700)
+  check('too little owed and there is nothing to press', !(await thin.p.$('.drill')))
+  // And the doorway itself must not deal a round of three either.
+  await thin.p.goto(`${S}/srbija/greske`,{waitUntil:'networkidle0'}); await pause(900)
+  check('nor does the address deal one', !/\/igra\?/.test(thin.p.url()), thin.p.url())
+  await thin.ctx.close()
 }
 
 // what a shared result previews as. This needs a deployment: the tags are made

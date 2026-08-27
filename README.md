@@ -40,6 +40,18 @@ Rounds are therefore drawn from a seeded shuffle rather than from chance, and
 a round arriving without a seed is given one before play starts. Playing again
 mints a new seed and navigates — there is no hidden restart.
 
+A round of your own mistakes is the same idea with the deck written out rather
+than derived: `/srbija/igra?d=KG.B%C4%8C.%C4%8CA.NS&s=4zpmp`. It has to be
+written out, because the rule that chose those four reads *this browser's*
+history and would deal a different round to whoever opened the link. Nothing is
+given away by it — a code is the question, and the place it belongs to appears
+nowhere in the address.
+
+`/:topic/greske` is the doorway to one: it reads what is still owed, deals it,
+and replaces itself with the round's own address. So the doorway can be
+bookmarked and always means "the ones I owe now", while what it opens is still
+a round anyone can be sent.
+
 `useRound` keeps one append-only list of answers, each holding what was picked
 and how long it took. The score, the streak, the progress map and the end
 screen are all read back out of that list rather than counted up as play goes
@@ -99,11 +111,15 @@ cd apps/tablice && node regress.mjs
 cd apps/geografija && URL=https://... node regress.mjs
 ```
 
-Neither run is the whole suite. Tablice has 111 checks and no single run does
-all of them: 85 want a dev server — a stubbed sign-in, syncing, the clock, the
-clipboard — and 80 want a deployment, because the preview tags are written into
+Neither run is the whole suite. Tablice has 125 checks and no single run does
+all of them: 99 want a dev server — a stubbed sign-in, syncing, the clock, the
+clipboard — and 94 want a deployment, because the preview tags are written into
 the built HTML, the pictures come from a function under `api/`, and a shared
 result is a whole page served by one. Run both.
+
+Count from the run rather than from the calls to `check()`. The 99 is two dev
+runs on 27 August; the 94 is derived from it and has not been confirmed against
+a deployment yet.
 
 ## Why one repo
 

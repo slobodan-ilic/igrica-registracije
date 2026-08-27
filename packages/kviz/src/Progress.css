@@ -290,3 +290,13 @@
   font-style: normal;
   font-weight: 600;
 }
+
+/* The one row on this page that is a thing to do rather than a number to read:
+   one button per topic that has enough owed to fill a round. Wraps, because
+   the plate quiz has six topics and a phone has one column. */
+.drills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}

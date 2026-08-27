@@ -12,7 +12,13 @@ import { db, session, only } from './_lib.js'
 
 /** Enough for a long backlog on first sign-in, small enough to refuse abuse. */
 const MAX_ROUNDS = 200
-const MAX_ANSWERS = 100
+/**
+ * The longest round either app can deal is Yugoslavia's 125 towns, and this was
+ * 100 — so a round of the whole map arrived on a second device twenty-five
+ * questions short, silently. The same shape of loss as the dropped timeouts
+ * below. Two hundred, which is also the cap on a deck written into an address.
+ */
+const MAX_ANSWERS = 200
 
 const str = (v, max) => (typeof v === 'string' && v.length <= max ? v : null)
 const int = (v, max) => (Number.isInteger(v) && v >= 0 && v <= max ? v : null)
@@ -39,8 +45,11 @@ export function clean(r) {
   const clean_answers = answers
     .map((a, step) => ({
       step,
-      code: str(a?.code, 12),
-      picked: str(a?.picked, 12),
+      // Forty, not twelve: a plate code is two letters but a geography answer is
+      // its name — "severnobanatski-okrug" is twenty-one — and anything longer
+      // was being dropped on the way up.
+      code: str(a?.code, 40),
+      picked: str(a?.picked, 40),
       correct: typeof a?.correct === 'boolean' ? a.correct : null,
       ms: int(a?.ms, 86_400_000),
     }))
@@ -57,6 +66,11 @@ export function clean(r) {
     // Accuracy under a clock is a different number from accuracy without one,
     // and a round that arrives without this is compared against neither.
     timed: Boolean(r.timed),
+    // Whether the deck was chosen from this player's own mistakes rather than
+    // dealt. Same reason as the clock: such a round is harder on purpose, so it
+    // is never averaged in with the rest, and one that arrived without this
+    // would be.
+    practice: Boolean(r.practice),
     at: new Date(at ?? Date.now()).toISOString(),
     answers: clean_answers,
   }
@@ -80,7 +94,8 @@ async function serve(req, res, sql, player) {
 
   if (req.method === 'GET') {
     const rounds = await sql`
-      select r.id, r.app, r.topic, r.seed, r.length, r.easy, r.kim, r.timed, r.score, r.ms,
+      select r.id, r.app, r.topic, r.seed, r.length, r.easy, r.kim, r.timed, r.practice,
+             r.score, r.ms,
              -- float8, or the driver hands epoch milliseconds back as a string
              (extract(epoch from r.finished_at) * 1000)::float8 as at,
              coalesce(
@@ -116,9 +131,10 @@ async function serve(req, res, sql, player) {
   for (const r of rounds) {
     // Nothing to update on conflict: a finished round does not change.
     const [row] = await sql`
-      insert into round (id, player, app, topic, seed, length, easy, kim, timed, score, ms, finished_at)
+      insert into round (id, player, app, topic, seed, length, easy, kim, timed, practice,
+                         score, ms, finished_at)
       values (${r.id}, ${player.sub}, ${r.app}, ${r.topic}, ${r.seed}, ${r.length},
-              ${r.easy}, ${r.kim}, ${r.timed}, ${r.score}, ${r.ms}, ${r.at})
+              ${r.easy}, ${r.kim}, ${r.timed}, ${r.practice}, ${r.score}, ${r.ms}, ${r.at})
       on conflict (id) do nothing
       returning id
     `

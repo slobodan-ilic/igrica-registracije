@@ -34,6 +34,17 @@ export type Round = {
   kim: boolean
   /** Whether each question is against a clock. */
   timed: boolean
+  /**
+   * The exact questions, in order, when they were chosen rather than dealt from
+   * the seed — a round of the codes you keep getting wrong.
+   *
+   * Written out in full rather than named by a rule, because the rule reads
+   * *this browser's history* and would deal a different round to whoever opened
+   * the link — which is the one thing a round's address may never do. Nothing
+   * is given away by it: a code is the question, not the answer, and the place
+   * it belongs to appears nowhere in the address.
+   */
+  deck?: string[]
 }
 
 export type Route =
@@ -41,6 +52,7 @@ export type Route =
   | { name: 'progress' }
   | { name: 'daily' }
   | { name: 'setup'; topic: string }
+  | { name: 'practice'; topic: string }
   | ({ name: 'game'; topic: string } & Round)
 
 /**
@@ -58,6 +70,13 @@ export const setRootTopic = (id: string | null) => {
 export const hasChooser = () => root === null
 
 /**
+ * Codes are letters or a hyphenated name — never a dot — in every dataset the
+ * two apps carry, so a dot separates them. The cap is there because the deck
+ * arrives from an address, and an address is written by anyone.
+ */
+const MOST_DEALT = 200
+
+/**
  * The round in the query string. Anything missing takes the plainest reading,
  * not the player's saved preference: a link has to mean the same thing to
  * whoever opens it.
@@ -65,12 +84,17 @@ export const hasChooser = () => root === null
 const round = (search: string): Round => {
   const q = new URLSearchParams(search)
   const n = Number(q.get('n'))
+  const dealt = q.get('d')
+  const deck = dealt ? dealt.split('.').filter(Boolean).slice(0, MOST_DEALT) : undefined
   return {
-    length: Number.isFinite(n) && n > 0 ? n : 0,
+    // A chosen deck is its own length, so it is never written twice and cannot
+    // be written twice differently.
+    length: deck ? deck.length : Number.isFinite(n) && n > 0 ? n : 0,
     seed: q.get('s') ?? '',
     easy: q.get('m') === 'lako',
     kim: q.get('k') === '1',
     timed: q.get('t') === '1',
+    ...(deck ? { deck } : {}),
   }
 }
 
@@ -88,16 +112,24 @@ export function parseRoute(pathname: string, search: string): Route {
   if (root) {
     if (!topic) return { name: 'setup', topic: root }
     if (topic === 'igra') return { name: 'game', topic: root, ...round(search) }
+    if (topic === 'greske') return { name: 'practice', topic: root }
   } else if (!topic) {
     return { name: 'home' }
   }
 
   if (section === 'igra') return { name: 'game', topic, ...round(search) }
+  if (section === 'greske') return { name: 'practice', topic }
   return { name: 'setup', topic }
 }
 
-const query = ({ length, seed, easy, kim, timed }: Round) =>
-  [`n=${length}`, seed && `s=${seed}`, easy && 'm=lako', kim && 'k=1', timed && 't=1']
+const query = ({ length, seed, easy, kim, timed, deck }: Round) =>
+  [
+    deck?.length ? `d=${deck.map(encodeURIComponent).join('.')}` : `n=${length}`,
+    seed && `s=${seed}`,
+    easy && 'm=lako',
+    kim && 'k=1',
+    timed && 't=1',
+  ]
     .filter(Boolean)
     .join('&')
 
@@ -107,6 +139,13 @@ export const href = {
   daily: () => '/dnevni',
   setup: (topic: string) => `/${topic}`,
   game: (topic: string, r: Round) => `/${topic}/igra?${query(r)}`,
+  /**
+   * A doorway rather than a round: it reads this browser's history, deals the
+   * codes still owed, and replaces itself with the round's own address. So it
+   * can be bookmarked and always means "the ones I owe *now*", while the round
+   * it opens is still a round anyone can be sent.
+   */
+  practice: (topic: string) => `/${topic}/greske`,
 }
 
 /**
@@ -115,6 +154,9 @@ export const href = {
  * bar is always something worth copying.
  */
 export function canonical(route: Route): string | null {
+  // The mistake round replaces its own address once the dataset says which
+  // codes are on the map; nothing here can know that yet.
+  if (route.name === 'practice') return null
   if (route.name === 'home' || route.name === 'progress' || route.name === 'daily') return null
   if (route.name === 'game') {
     return route.length > 0 && route.seed

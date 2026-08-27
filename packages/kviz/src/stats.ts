@@ -123,6 +123,9 @@ export function against(round: Played, app?: string) {
       r.topic === round.topic &&
       r.easy === round.easy &&
       r.timed === round.timed &&
+      // A deck chosen from your mistakes is harder than one dealt at random, so
+      // the two never compare. Same rule as easy and the clock.
+      Boolean(r.practice) === Boolean(round.practice) &&
       r.answers.length > 0 &&
       (app ? r.app === app : true),
   )
@@ -145,9 +148,23 @@ export function against(round: Played, app?: string) {
 
 /** Everything the progress page shows, from what this browser has kept. */
 export function progress(app?: string, mode: Mode = 'all') {
-  const played = history().filter((r) => (app ? r.app === app : true) && r.answers.length > 0)
+  const every = history().filter((r) => (app ? r.app === app : true) && r.answers.length > 0)
+  /**
+   * Practice rounds are held out of every figure below. Their decks are chosen
+   * to be the things you get wrong, so counting them would pull accuracy down
+   * the harder you worked at it — the one number on this page that must never
+   * punish practising. They are counted on their own, and what they are for is
+   * measured by the list shrinking rather than by a percentage.
+   */
+  const drilled = every.filter((r) => r.practice)
+  const played = every.filter((r) => !r.practice)
   const rounds = played.filter((r) => inMode(r, mode))
   return {
+    /** Practice rounds finished, and questions asked in them. */
+    drilled: {
+      rounds: drilled.length,
+      questions: drilled.reduce((n, r) => n + r.answers.length, 0),
+    },
     /** What is on offer, so the page can hide a filter with nothing to filter. */
     modes: {
       easy: played.filter((r) => r.easy).reduce((n, r) => n + r.answers.length, 0),
@@ -156,7 +173,9 @@ export function progress(app?: string, mode: Mode = 'all') {
     rounds,
     all: tally(rounds),
     topics: byTopic(rounds),
-    confused: confusions(rounds),
+    // Counted across practice rounds too: a mistake made while practising is
+    // still a mistake, and nothing here is averaged.
+    confused: confusions(every.filter((r) => inMode(r, mode))),
     line: overTime(rounds),
   }
 }

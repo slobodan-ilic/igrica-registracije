@@ -4,6 +4,8 @@ import { hasChooser, href, linkProps } from './router'
 import { randomSeed } from './deck'
 import { budget, CHOICES } from './useRound'
 import { number, today } from './challenge'
+import { history } from './history'
+import { due, ENOUGH } from './practice'
 import { plural } from './sr'
 import type { Topic } from './topic'
 import type { RegionProps } from './types'
@@ -79,6 +81,13 @@ export function Setup({
   length, onLength, mode, onMode, withKim, onKim, kimCount, timed, onTimed, choices, elsewhere,
 }: Props) {
   const [open, setOpen] = useState(false)
+
+  /**
+   * What this browser still owes on this topic. Against the codes actually in
+   * play, so the number on the pill is the number of questions the round will
+   * hold — a Kosovo code cannot be counted here and then be undealable there.
+   */
+  const owed = useMemo(() => due(history(), topic.id, new Set(codes)), [topic.id, codes])
 
   const asked = length === 'sve' ? codes.length : Math.min(Number(length), codes.length)
   const seconds = budget(mode === 'easy' ? CHOICES : codes.length)
@@ -158,6 +167,21 @@ export function Setup({
               )}
               {topic.offersKim && withKim && <p className="tweaks__note">{topic.kimNote?.(kimCount)}</p>}
             </div>
+          )}
+
+          {/* Below the button rather than beside it: this page has one thing to
+              press, and a second of equal weight would make it a menu. It only
+              appears once there is enough owed to make a round of. */}
+          {owed.length >= ENOUGH && (
+            <a className="drill" {...linkProps(href.practice(topic.id))}>
+              <span className="drill__mark" aria-hidden="true">
+                <svg viewBox="0 0 12 12" width="12" height="12">
+                  <circle cx="6" cy="6" r="5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="6" cy="6" r="1.5" fill="currentColor" />
+                </svg>
+              </span>
+              Vežbaj greške <b>{owed.length}</b>
+            </a>
           )}
 
           <p className="intro__aside">

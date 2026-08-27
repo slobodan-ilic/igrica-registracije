@@ -33,6 +33,10 @@ create table if not exists round (
   -- time pressure is a different number, and a round that arrives without this
   -- can be compared with neither the clocked rounds nor the unclocked ones.
   timed       boolean     not null default false,
+  -- Whether the deck was chosen from the player's own mistakes rather than
+  -- dealt from the seed. Such a round is harder on purpose, so it is counted
+  -- apart from the rest for the same reason easy and clocked rounds are.
+  practice    boolean     not null default false,
   score       int         not null,
   ms          int         not null,
   finished_at timestamptz not null default now()
@@ -55,6 +59,7 @@ create table if not exists answer (
 -- added after the fact is added here too. Existing rounds default to unclocked,
 -- which is what all but a handful of them were.
 alter table round add column if not exists timed boolean not null default false;
+alter table round add column if not exists practice boolean not null default false;
 
 -- A result somebody shared, so that the link they hand out can be short and can
 -- be opened by anyone.

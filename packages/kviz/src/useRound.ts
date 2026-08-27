@@ -49,6 +49,12 @@ type Options = {
   seed: string
   /** Seconds a question is worth, or 0 when the round is not against a clock. */
   seconds: number
+  /**
+   * The questions, already chosen — a round of the codes you keep getting
+   * wrong. Given one, the seed no longer deals: it only decides which
+   * neighbours stand as decoys on easy.
+   */
+  dealt?: string[]
 }
 
 /** The longest run of correct answers, and the run still going. */
@@ -63,8 +69,15 @@ function runs(answers: Answer[]) {
 }
 
 /** Everything that makes up one round: the deck, the score, and what the map shows. */
-export function useRound({ codes, byCode, centroids, length, easy, seed, seconds }: Options) {
-  const [deck] = useState(() => buildDeck(codes, length, seed))
+export function useRound({ codes, byCode, centroids, length, easy, seed, seconds, dealt }: Options) {
+  // Filtered against what is actually on the map, because a chosen deck comes
+  // out of an address: a Kosovo code in a round played without that set would
+  // otherwise be a question with no answer to click.
+  const [deck] = useState(() => {
+    if (!dealt?.length) return buildDeck(codes, length, seed)
+    const live = new Set(codes)
+    return dealt.filter((c) => live.has(c))
+  })
   const [answers, setAnswers] = useState<Answer[]>([])
   // Whether the answer just given is still on screen. The reveal is a moment in
   // the round, not a fact about it, so it is the one thing held apart.

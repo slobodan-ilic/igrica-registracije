@@ -6,8 +6,8 @@ built, and what is left.
 Rendered and shareable: [claude.ai/code/artifact/ab9911f1](https://claude.ai/code/artifact/ab9911f1-f66d-441c-8d90-0aa61d59bd06)
 
 > **Reading this.** Section 2 is drawn from the repository's history and is
-> accurate to 26 August 2026, when lint, both builds and both browser suites
-> were last run against production and came back clean; section 4 lists things
+> accurate to 27 August 2026, when lint, both builds and both browser suites
+> were last run and came back clean; section 4 lists things
 > checked and found wanting on that date. Sections 1, 3 and 5 are a proposal and are meant to be
 > argued with. Three statuses are used and they mean what they say:
 > **Shipped** is live and checked, **Next** is agreed and not started, **After**
@@ -23,7 +23,7 @@ plates to Yugoslavia's as they stood in 1985.
 
 These seven lines are the acceptance criteria. Not a feature list — a
 description of the experience when it works. Each is either true today or it is
-not, and the ones that are not are the work that remains. **Four of seven hold.**
+not, and the ones that are not are the work that remains. **Five of seven hold.**
 
 | | | |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ not, and the ones that are not are the work that remains. **Four of seven hold.*
 | ✓ | **They can play in one tap, with no setup.** | One button; every setting remembered and put away behind it. |
 | ✓ | **There is a reason to come back tomorrow.** | A daily challenge at `/dnevni` — one round, the same for everyone, a different country each day. |
 | ✓ | **They can see they are improving.** | Accuracy over time and per country, kept per device and synced to an account. |
-| — | **They can practise exactly what they are bad at.** | The data exists — the confusion pairs — but nothing acts on it yet. |
+| ✓ | **They can practise exactly what they are bad at.** | A round dealt from the codes you keep getting wrong, at `/:topic/greske`. A code leaves the list once you have had it right twice running. |
 | — | **They can compare themselves to others, fairly.** | Needs comparable rounds before it needs a table. See section 4. |
 | ✓ | **They can share a result without spoiling it.** | A grid of squares, the score and a link — no code and no place name anywhere in it. |
 
@@ -39,7 +39,7 @@ not, and the ones that are not are the work that remains. **Four of seven hold.*
 
 ## 2 · The record — what is built
 
-Fifty-six commits between 14 and 26 August 2026, in ten areas. Everything
+Sixty commits between 14 and 27 August 2026, in eleven areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -210,10 +210,51 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   endpoint used to drop every answer without a pick. A ten-question round with
   two timeouts arrived as eight — shorter, more accurate, and with a streak the
   timeout had broken closed back up.
-- Both were found by reading rather than by playing, and both are now checked:
-  a round goes through `clean()` in the suite and is asserted to come out whole.
-  It is the one check with no browser in it, because the loss happened where no
-  browser could see it.
+- Two more of the same shape were found on 27 August, in the same function. A
+  round of the whole map was truncated to a hundred answers, so Yugoslavia's
+  125 towns arrived on a second device twenty-five questions short; and an
+  answer's code was capped at twelve characters, which is fine for a plate code
+  and drops every geography answer, since those are names —
+  `severnobanatski-okrug` is twenty-one.
+- All four were found by reading rather than by playing, and all four are now
+  checked: a round goes through `clean()` in the suite and is asserted to come
+  out whole. It is the one check with no browser in it, because the loss
+  happened where no browser could see it.
+
+### Practising what you get wrong · shipped 27 Aug
+
+- A round dealt entirely from the codes this browser keeps getting wrong.
+  Reached from a topic's page, from the end of any round that left mistakes
+  behind, and from the progress page beside the list it acts on.
+- **A code leaves the list once you have had it right twice running.** Not
+  once, because one right answer after a miss is as likely to be a lucky click
+  as a thing learned; not five, because a list that never shrinks is a list
+  nobody believes. The shrinking is what makes this a study tool rather than
+  a harder round, so the end of a practice round says how many are left rather
+  than how the score compares.
+- Nothing new is recorded to make it work. Every answer has held *what was
+  picked* since the first week, which is the whole reason this can exist at
+  all and the reason no lookup site can copy it.
+- **A practice round is still a round anyone can be sent.** Its deck is written
+  into its address — `?d=KG.BČ.ČA.NS` — rather than named by a rule, because
+  the rule reads one browser's history and would deal a different round to
+  whoever opened the link. `/:topic/greske` is a doorway that deals one and
+  replaces itself with it, so the doorway can be bookmarked and what it opens
+  can be shared. Nothing in the address gives an answer away: a code is the
+  question, not the place.
+- **It is never averaged in with the rest.** A deck chosen to be the things you
+  get wrong is harder than one dealt at random, so counting it would pull
+  accuracy down the harder you worked — the one number on the progress page
+  that must never punish practising. Held apart in the browser, in the round
+  table and in the end-of-round comparison, the same way easy and clocked
+  rounds are. Mistakes made while practising still count as mistakes, because
+  that is a count and not an average.
+- Ten questions, and always the worst ten: owing forty does not mean four
+  rounds in rotation, it means the same ten until they graduate and the next
+  ten come up behind them. Fixing the worst thing first is what a study tool is
+  for, and the list is ordered by how often each was missed.
+- Offered only once four are owed. Three questions is not a round, and dealing
+  one teaches whoever pressed the button that this is not for them.
 
 ### Underneath · shipped 17–24 Aug
 
@@ -224,12 +265,12 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 122 checks across the two apps — 111 and 11, counted by running them rather
+- 136 checks across the two apps — 125 and 11, counted by running them rather
   than by counting the lines that call them — each written to fail before it was
-  made to pass; the daily's, the preview's, the share's and the round trip
-  through the server were each watched failing with the feature removed. No
-  single run of tablice does all 111: thirty-one want a dev server, twenty-six
-  want a deployment, and the fifty-four left run either way.
+  made to pass; the daily's, the preview's, the share's, the practice round's
+  and the round trip through the server were each watched failing with the
+  feature removed. No single run of tablice does all 125: thirty-one want a dev
+  server, twenty-six want a deployment, and the sixty-eight left run either way.
 - Two of them were written, watched passing, and rewritten because they were
   passing for the wrong reason — one fetched a link from inside the app, where
   every wrong answer resolves against the dev server and comes back as the page
@@ -246,37 +287,52 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 
 ## 3 · Outstanding — what still needs doing
 
-Three pieces of work, in the order they have to happen. Each exists because the
-next one needs it. Built out of order most land in an empty room: a leaderboard
-with three names on it advertises that nobody is here.
+Two pieces of work and one purchase, in the order they have to happen. Built
+out of order they land in an empty room: a leaderboard with three names on it
+advertises that nobody is here.
 
-### 1. Practise your mistakes — **next**
+### 0. A domain — **not code, and first**
 
-A round dealt entirely from the codes you keep getting wrong. This is what turns
-a toy into a study tool, and nothing else on the web can copy it — every answer
-here already records *what you picked*.
+`tablice.vercel.app` is fine in a family chat and wrong in a public post. It
+comes before the code pages rather than after them for a concrete reason: those
+310 pages exist to be indexed, and moving indexed addresses to a new host later
+means redirects and a ranking reset. Vercel keeps the old host working
+alongside a custom one, and a shared result's id is host-independent, so nothing
+already sent to anyone breaks.
 
-- **Unlocks** the reason to use this over a listicle
-- **Depends on** nothing — the confusion pairs are already recorded
-- **Touches** `deck.ts`, `stats.ts`, one new round type
+- **Unlocks** item 1 being worth doing, and telling anybody about this at all
+- **Depends on** nothing
+- **Touches** a registrar, and two lines of Vercel configuration
 
-### 2. Code pages — **after**
+### 1. Code pages — **next**
 
 One page per code — 310 of them — answering the question people actually type
 into a search box, with the map beside it and a way into the quiz. A doorway,
 never a tool inside the game.
 
+This was ordered second while practising your mistakes was first. It moved on
+27 August: both depend on nothing, so the order between them was preference,
+and the database showed the preference was wrong. Three accounts, all from
+19 August, and every stored round a test — a study tool with no students is a
+demo, and the criterion that is false is the one about being found.
+
 - **Unlocks** arrivals from search
-- **Depends on** nothing
+- **Depends on** item 0, or the work gets indexed on a host we are leaving
 - **Touches** 310 static routes, the map component, a sitemap
 
-### 3. Leaderboards — **last**
+### 2. Leaderboards — **last**
 
-Deliberately last. It needs people, which item 2 brings. The
+Deliberately last. It needs people, which item 1 brings. The
 comparable round it ranks already exists — the daily. Shipped today it would be
 an empty table with one name on it three times.
 
-- **Unlocks** a reason to return once the novelty goes
+It is also where the case for signing in stops being thin. Today an account
+buys one thing — progress carried between devices — which is a reason for
+somebody who already loves this, and there is nobody in that position yet. A
+name on a board, and a name on a shared result, are the two things that make an
+account worth having, and both are here rather than earlier.
+
+- **Unlocks** a reason to return once the novelty goes, and a reason to sign in
 - **Depends on** people
 - **Touches** a fourth table, two endpoints, a screen
 
@@ -305,8 +361,14 @@ badge. It has said that since the first week. Build it or take it down.
 
 Easy rounds are counted apart from the whole map, for good reason. Rounds with
 Kosovo switched on and rounds against the clock are recorded the same way and
-then averaged together with the rest. The clock especially: accuracy under time
-pressure is a different number, and mixing them quietly flatters neither.
+then averaged together with the rest on the progress page. The clock especially:
+accuracy under time pressure is a different number, and mixing them quietly
+flatters neither.
+
+The machinery now exists and is used twice — the end-of-round comparison already
+holds the clock apart, and the progress page holds practice rounds apart. What is
+missing is the same treatment for these two, and a filter that does not become a
+row of six buttons.
 
 ---
 

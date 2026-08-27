@@ -72,7 +72,8 @@
   .menu .btn--go { order: 5; }
   .menu .tweak { order: 6; margin-bottom: 4px; }
   .menu .tweaks { order: 7; }
-  .menu .intro__aside { order: 8; }
+  .menu .drill { order: 8; }
+  .menu .intro__aside { order: 9; }
 }
 
 .intro__hero {
@@ -141,6 +142,22 @@
   padding: 7px 18px;
   font-size: 14px;
 }
+
+/* The button that acts on what just went wrong. Red rather than the blue every
+   other accent takes, so it reads apart from "play another one" without
+   shouting — it is an offer, not the main way on. */
+.btn--drill {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.btn--drill:hover {
+  border-color: var(--red);
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.btn--drill b { font-weight: 700; }
 
 .recap {
   margin: 26px 0 6px;
@@ -490,6 +507,35 @@
 .today:hover { border-color: var(--accent); }
 .today b { color: var(--accent); }
 
+/* The way into a round made only of what you keep getting wrong.
+   A pill rather than a button, and below the one on the page rather than beside
+   it: this screen has a single thing to press, and a second of equal weight
+   would turn it into a menu. Red rather than the daily's blue, because it is
+   about mistakes — and it appears at all only once enough is owed to fill a
+   round. */
+.drill {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin: 16px 0 0;
+  padding: 7px 14px 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.drill:hover { border-color: var(--red); background: var(--red-soft); }
+.drill b { color: var(--red); }
+/* Drawn rather than typed: the design system takes no emoji as UI. */
+.drill__mark { display: flex; color: var(--red); }
+
 .today__dot {
   width: 7px;
   height: 7px;
@@ -498,7 +544,7 @@
 }
 
 @media (max-width: 880px) {
-  .daily__score, .today { align-self: center; }
+  .daily__score, .today, .drill { align-self: center; }
   /* Block context on the daily screen, flex on the folded menu — margin centres
      it in the first, align-self in the second. */
   .today { margin-inline: auto; }

@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { BackLink } from './Chrome'
 import { href, linkProps } from './router'
 import { appName } from './prefs'
+import { history } from './history'
+import { due, ENOUGH, GRADUATES_AT } from './practice'
 import { progress, type Mode } from './stats'
 import { plural } from './sr'
 import type { Player } from './account'
@@ -177,6 +179,24 @@ export function Progress({
   const p = useMemo(() => progress(appName(), mode), [mode])
   const label = (id: string) => topics[id]?.label ?? id
 
+  /**
+   * What is owed, per topic, worst first.
+   *
+   * Counted without a map, because no dataset is loaded on this page — so on
+   * Serbia a Kosovo code could be counted here and then be undealable in a
+   * round played without that set. It cannot in practice: the only way to get a
+   * Kosovo code wrong is to have played with the set on, and the setting is
+   * remembered. `/greske` deals against the real map either way, so the worst
+   * case is a round one question shorter than the number here.
+   */
+  const owed = useMemo(() => {
+    const mine = history().filter((r) => r.app === appName())
+    return Object.keys(topics)
+      .map((id) => ({ id, n: due(mine, id).length }))
+      .filter((t) => t.n >= ENOUGH)
+      .sort((a, b) => b.n - a.n)
+  }, [topics])
+
   // Nothing played yet. A heading and a button in an empty screen teaches
   // nobody anything, so this says what the page will hold, shows what one of
   // those lines looks like, and offers the two ways to fill it — play a round,
@@ -202,7 +222,8 @@ export function Progress({
           <li>
             <b>Oznake koje najčešće pogrešite</b>
             <span>
-              ono najkorisnije — na primer <em>KŠ → Kraljevo, 6 puta</em>
+              ono najkorisnije — na primer <em>KŠ → Kraljevo, 6 puta</em>, i partija
+              sastavljena samo od njih
             </span>
           </li>
         </ul>
@@ -246,6 +267,33 @@ export function Progress({
 
       {p.line.length > 1 && <OverTime data={p.line} label={label} />}
       {p.topics.length > 0 && <ByCountry rows={p.topics} label={label} />}
+
+      {/* The one thing on this page that is not a number to read but a thing to
+          do. Above the list of mistakes rather than below it, because the list
+          is what it acts on and nobody scrolls past a chart to find a verb. */}
+      {owed.length > 0 && (
+        <section className="chart">
+          <h2 className="chart__title">Vežbajte greške</h2>
+          <p className="chart__note chart__note--lead">
+            Partija sastavljena samo od onoga što stalno grešite. Oznaka silazi sa spiska kada
+            je pogodite {GRADUATES_AT} puta zaredom.
+          </p>
+          <div className="drills">
+            {owed.map((t) => (
+              <a key={t.id} className="btn btn--drill" {...linkProps(href.practice(t.id))}>
+                {label(t.id)} <b>{t.n}</b>
+              </a>
+            ))}
+          </div>
+          {p.drilled.rounds > 0 && (
+            <p className="chart__note">
+              Odigrano vežbi: {p.drilled.rounds} · {p.drilled.questions}{' '}
+              {plural(p.drilled.questions, 'pitanje', 'pitanja', 'pitanja')}. Ne ulaze u brojke
+              iznad — namerno su teže od običnih partija.
+            </p>
+          )}
+        </section>
+      )}
 
       {p.confused.length > 0 && (
         <section className="chart">

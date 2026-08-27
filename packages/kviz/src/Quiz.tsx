@@ -7,6 +7,8 @@ import { Game } from './Game'
 import { Corner, OtherApp, type Elsewhere } from './Chrome'
 import { accountsOffered, useAccount } from './account'
 import { indexByCode, playableCodes, randomSeed } from './deck'
+import { history } from './history'
+import { deckOf, due, ENOUGH } from './practice'
 import { applyTheme, systemTheme, THEMES, usePref, type Theme } from './prefs'
 import { canonical, href, navigate, useRoute, type Round } from './router'
 import { CHOICES } from './useRound'
@@ -64,7 +66,10 @@ export function Quiz({ topics, home, title, siblingsLabel, elsewhere }: QuizProp
     [],
   )
 
-  const topicId = route.name === 'home' || route.name === 'progress' || route.name === 'daily' ? null : route.topic
+  const topicId =
+    route.name === 'home' || route.name === 'progress' || route.name === 'daily'
+      ? null
+      : route.topic
   const topic = topicId && topicId in topics ? topics[topicId] : null
 
   // An unknown topic in the URL is a dead end; send it home.
@@ -137,6 +142,38 @@ export function Quiz({ topics, home, title, siblingsLabel, elsewhere }: QuizProp
     return live.length ? live[Math.floor(Math.random() * live.length)].properties : null
   }, [regions])
 
+  /**
+   * `/:topic/greske` is a doorway, not a round: it reads what this browser
+   * still owes, deals it, and replaces itself with the round's own address —
+   * `replace`, so pressing back does not land on a doorway that deals again.
+   *
+   * It happens here rather than on the button that links to it because only
+   * here is the dataset loaded, and only the dataset says which codes are on
+   * the map. It plays the way you play: the remembered difficulty, clock and
+   * Kosovo setting, exactly as pressing Igraj would.
+   *
+   * Too few owed and it goes to the topic's page instead. Three questions is
+   * not a round, and dealing one teaches whoever pressed it that this is not
+   * for them.
+   */
+  useEffect(() => {
+    if (route.name !== 'practice' || !topic || !data) return
+    const deck = deckOf(due(history(), topic.id, playable))
+    navigate(
+      deck.length >= ENOUGH
+        ? href.game(topic.id, {
+            length: deck.length,
+            seed: randomSeed(),
+            easy: mode === 'easy',
+            kim: withKim,
+            timed: timed === 'on',
+            deck,
+          })
+        : href.setup(topic.id),
+      true,
+    )
+  }, [route.name, topic, data, playable, mode, withKim, timed])
+
   const corner = (
     <Corner theme={theme} onTheme={setTheme} account={account} />
   )
@@ -174,6 +211,17 @@ export function Quiz({ topics, home, title, siblingsLabel, elsewhere }: QuizProp
       <main className="shell shell--center">
         {corner}
         <p className="loading">Učitavanje mape…</p>
+      </main>
+    )
+  }
+
+  // Between the dataset arriving and the redirect above, so the topic's page
+  // does not flash up on the way to a round.
+  if (route.name === 'practice') {
+    return (
+      <main className="shell shell--center">
+        {corner}
+        <p className="loading">Spremam vaše greške…</p>
       </main>
     )
   }

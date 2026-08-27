@@ -14,6 +14,11 @@
   --accent: #0d3a86;
   --accent-soft: #eaf0fb;
   --red: #c8102e;
+  /* The same relationship accent-soft has to accent: a fill faint enough to sit
+     under text at full contrast. Used where something is about what went
+     wrong — practising your mistakes — rather than about being wrong, which is
+     the orange of an answer. */
+  --red-soft: #fceaec;
 
   --ok: #009486;
   --ok-line: #005f56;
@@ -95,6 +100,7 @@
   --accent: #74a2ee;
   --accent-soft: #1a2438;
   --red: #ef5f74;
+  --red-soft: #2c1a1e;
 
   --ok: #12a394;
   --ok-line: #8cf0e2;
