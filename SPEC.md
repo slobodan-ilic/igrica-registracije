@@ -39,7 +39,7 @@ not, and the ones that are not are the work that remains. **Five of seven hold.*
 
 ## 2 · The record — what is built
 
-Sixty commits between 14 and 27 August 2026, in eleven areas. Everything
+Sixty-three commits between 14 and 28 August 2026, in twelve areas. Everything
 here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 [geografija-srbija.vercel.app](https://geografija-srbija.vercel.app).
 
@@ -256,6 +256,24 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
 - Offered only once four are owed. Three questions is not a round, and dealing
   one teaches whoever pressed the button that this is not for them.
 
+### Saying only true things · shipped 28 Aug
+
+- The geography app's home offered **Nacionalni parkovi** behind an *Uskoro*
+  badge from the first week to the twelfth. Taken down. Twelve weeks is long
+  enough that "soon" had stopped being a plan and become something the front
+  page was wrong about, and it is the first thing a stranger reads. The card
+  draws itself from a list, so putting it back is putting a line back.
+- **That app's progress said nothing about being stuck in one browser.** It has
+  the same progress page and the same account code as the plate quiz and no
+  Google client id, so its sign-in never appears — which is fine, and was
+  silent, so its progress read like everyone else's and quietly did not travel.
+  It now says so. Local-first is the rule; being local without saying so is not.
+- **Rivers and mountains are not countries**, and the per-topic chart called
+  them that: "Po zemljama", on a page about four kinds of place. The heading is
+  the app's to name now.
+- Five checks, in the app that had eleven. All four assertions about the two
+  bullets above were watched failing with the fixes taken back out.
+
 ### Underneath · shipped 17–24 Aug
 
 - Two apps over one shared engine, deployed as separate projects from one
@@ -265,7 +283,7 @@ here is live at [tablice.vercel.app](https://tablice.vercel.app) and
   in the same order — the foundation everything in section 3 depends on.
 - Neon Postgres, three tables, reached from serverless functions in the same
   deploy. Schema in [apps/tablice/scripts/schema.sql](apps/tablice/scripts/schema.sql).
-- 136 checks across the two apps — 125 and 11, counted by running them rather
+- 141 checks across the two apps — 125 and 16, counted by running them rather
   than by counting the lines that call them — each written to fail before it was
   made to pass; the daily's, the preview's, the share's, the practice round's
   and the round trip through the server were each watched failing with the
@@ -345,17 +363,9 @@ that way. Not features — none of these would appear on a list of what the app
 lacks, and every one of them is visible to somebody using it. Fix them between
 the numbered items rather than after them.
 
-### The geography app's progress can never leave the browser
-
-It has the same progress page and the same account code, and no Google client
-id — so its sign-in button never appears and its rounds are stranded on one
-device. Either connect it to the same account, or say on the page that this one
-is local only.
-
-### A topic is promised that does not exist
-
-The geography app's home still offers "Nacionalni parkovi" with an *Uskoro*
-badge. It has said that since the first week. Build it or take it down.
+There were three on 27 August. Two went on 28 August and are in section 2. This
+is the one left, and it is the one that needs a decision rather than an
+afternoon.
 
 ### Kosovo and the clock are recorded but never separated
 

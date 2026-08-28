@@ -100,13 +100,15 @@ function OverTime({ data, label }: { data: Point[]; label: (id: string) => strin
 function ByCountry({
   rows,
   label,
+  heading,
 }: {
   rows: { topic: string; accuracy: number; questions: number }[]
   label: (id: string) => string
+  heading: string
 }) {
   return (
     <figure className="chart">
-      <figcaption className="chart__title">Po zemljama</figcaption>
+      <figcaption className="chart__title">{heading}</figcaption>
       <ul className="ranks">
         {rows.map((r) => (
           <li key={r.topic} className="rank">
@@ -169,10 +171,13 @@ export function Progress({
   topics,
   player,
   accounts,
+  topicsLabel,
 }: {
   topics: Record<string, Topic>
   player: Player | null
   accounts: boolean
+  /** What a topic is here — six countries, or four kinds of place. */
+  topicsLabel: string
 }) {
   const counts = useMemo(() => progress(appName()).modes, [])
   const [mode, setMode] = useState<Mode>(counts.easy > counts.classic ? 'easy' : 'classic')
@@ -239,6 +244,12 @@ export function Progress({
             vama.
           </p>
         )}
+        {!accounts && (
+          <p className="napredak__nudge">
+            Ovaj napredak ostaje u ovom pregledaču — ovde nema naloga, pa ne prelazi na
+            drugi uređaj.
+          </p>
+        )}
       </div>
     )
   }
@@ -266,7 +277,9 @@ export function Progress({
       </p>
 
       {p.line.length > 1 && <OverTime data={p.line} label={label} />}
-      {p.topics.length > 0 && <ByCountry rows={p.topics} label={label} />}
+      {p.topics.length > 0 && (
+        <ByCountry rows={p.topics} label={label} heading={topicsLabel} />
+      )}
 
       {/* The one thing on this page that is not a number to read but a thing to
           do. Above the list of mistakes rather than below it, because the list
@@ -320,6 +333,15 @@ export function Progress({
         <p className="napredak__nudge">
           Ovo se čuva samo u ovom pregledaču. Prijavite se gore desno i napredak vas prati i na
           telefonu.
+        </p>
+      )}
+      {/* An app with no sign-in said nothing at all here, so its progress looked
+          like everyone else's and quietly did not travel. Local-first is the
+          rule; being local without saying so is not. */}
+      {!accounts && (
+        <p className="napredak__nudge">
+          Ovaj napredak ostaje u ovom pregledaču — ovde nema naloga, pa ne prelazi na drugi
+          uređaj.
         </p>
       )}
     </div>

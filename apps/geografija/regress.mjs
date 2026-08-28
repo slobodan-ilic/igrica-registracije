@@ -119,6 +119,42 @@ check('confirm scores', (await t.$eval('.bar__stats',e=>e.textContent)).includes
   await mouse.close()
 }
 
+// the chooser must not promise what the app does not have, and progress that
+// cannot travel must say so. This app has no Google client id, so its sign-in
+// never appears — which is fine, and was silent, so its progress looked like
+// everyone else's and quietly stayed on one device.
+{
+  const ctx=await b.createBrowserContext(); const p=await ctx.newPage()
+  await p.setViewport({width:1280,height:900})
+  await p.goto(`${S}/`,{waitUntil:'networkidle0'}); await pause(600)
+  const soon=await p.$$eval('.gamecard--soon', els=>els.map(e=>e.textContent))
+  check('the chooser promises nothing it does not have', soon.length===0,
+    soon.join(' · ') || 'nothing promised')
+  // Anchors only: a sketched-in card is a div, so counting .gamecard would just
+  // be the check above again in different words.
+  const playable=await p.$$eval('a.gamecard', els=>els.map(e=>e.getAttribute('href')))
+  check('and offers every topic it does have',
+    playable.length===4 && new Set(playable).size===4, playable.join(' '))
+
+  // A round, so the progress page has something to draw rather than its empty
+  // state — the two say the same thing in different words and both must.
+  await p.evaluate(() => localStorage.setItem('geografija.history', JSON.stringify([{
+    id:'66666666-6666-6666-6666-666666666666', app:'geografija', topic:'reke', seed:'p',
+    length:2, easy:false, kim:false, timed:false, score:1, ms:1800, at:Date.now(),
+    answers:[{code:'drina',picked:'drina',correct:true,ms:900},
+             {code:'sava',picked:'dunav',correct:false,ms:900}]}])))
+  await p.goto(`${S}/napredak`,{waitUntil:'networkidle0'}); await pause(600)
+  const said=await p.$eval('.napredak__nudge', e=>e.textContent.trim()).catch(()=>'nothing')
+  check('progress that cannot travel says so', /ovom pregledaču/.test(said), said)
+  check('and does not offer a sign-in that will never appear',
+    !/[Pp]rijavite se/.test(said) && !(await p.$('.account')), said)
+  // Rivers and mountains are not countries, and this chart called them that.
+  const heading=await p.$$eval('.chart__title', es=>es.map(e=>e.textContent))
+  check('the per-topic chart calls a topic what it is here',
+    heading.includes('Po temama') && !heading.includes('Po zemljama'), heading.join(' · '))
+  await ctx.close()
+}
+
 console.log(fails? `\n${fails} FAILED`: '\nall checks passed')
 await shutdown()
 process.exit(fails ? 1 : 0)

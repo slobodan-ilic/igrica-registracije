@@ -40,6 +40,12 @@ export type QuizProps = {
   siblingsLabel?: string
   /** The sibling app, named once at the foot of the front page. */
   elsewhere?: Elsewhere
+  /**
+   * What a topic is, on the progress page's per-topic chart. "Po zemljama" for
+   * the plate quiz, which is six countries — and not for the geography quiz,
+   * which is rivers and mountains and was calling them countries.
+   */
+  topicsLabel?: string
 }
 
 /**
@@ -47,7 +53,9 @@ export type QuizProps = {
  * data. Everything specific to a subject lives in its Topic, so this is the
  * same code whether the answers are licence plates or mountains.
  */
-export function Quiz({ topics, home, title, siblingsLabel, elsewhere }: QuizProps) {
+export function Quiz({
+  topics, home, title, siblingsLabel, elsewhere, topicsLabel = 'Po zemljama',
+}: QuizProps) {
   const route = useRoute()
 
   // Every choice the player makes is remembered for next time.
@@ -191,7 +199,12 @@ export function Quiz({ topics, home, title, siblingsLabel, elsewhere }: QuizProp
     return (
       <main className="shell shell--scroll">
         {corner}
-        <Progress topics={topics} player={account.player} accounts={accountsOffered()} />
+        <Progress
+          topics={topics}
+          player={account.player}
+          accounts={accountsOffered()}
+          topicsLabel={topicsLabel}
+        />
       </main>
     )
   }

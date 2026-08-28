@@ -48,8 +48,8 @@ deliberately out of scope.
   layout bugs.
 - `npm run build` — both apps, with `tsc --noEmit` first.
 - `node regress.mjs` in either app, against its own dev server (tablice 5173,
-  geografija 5174, both pinned) or `URL=` a deployment. 136 checks: 125 in
-  tablice, 11 in geografija.
+  geografija 5174, both pinned) or `URL=` a deployment. 141 checks: 125 in
+  tablice, 16 in geografija.
 - **No single run of tablice executes all 125.** Against a dev server 99 run;
   against a deployment, 94. Thirty-one need the dev server — a stubbed sign-in,
   syncing, the clock, the clipboard, the empty progress page — and twenty-six

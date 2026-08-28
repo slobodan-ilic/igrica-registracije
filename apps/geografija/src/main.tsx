@@ -16,6 +16,8 @@ createRoot(document.getElementById('root')!).render(
     <Quiz
       topics={TOPICS}
       home={<Home />}
+      topicsLabel="Po temama"
+
       elsewhere={{
         href: 'https://tablice.vercel.app',
         label: 'Tablice',

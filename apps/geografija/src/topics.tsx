@@ -146,7 +146,14 @@ export const TOPICS: Record<string, Topic> = {
   },
 }
 
-/** Sketched on the home screen so the direction is visible. */
-export const UPCOMING = [
-  { label: 'Nacionalni parkovi', blurb: 'Đerdap, Tara, Fruška gora…' },
-]
+/**
+ * Sketched on the home screen so the direction is visible.
+ *
+ * Empty on purpose since 28 August. It held one entry — Nacionalni parkovi —
+ * from the first week to the twelfth, which is long enough that "uskoro" had
+ * stopped being a plan and become a thing the front page was wrong about.
+ * A promise a stranger reads on the way in has to be one we are about to keep.
+ *
+ * Putting it back is putting the line back: the card renders itself from this.
+ */
+export const UPCOMING: { label: string; blurb: string }[] = []
