@@ -60,11 +60,8 @@ deliberately out of scope.
   they sit inside `if (process.env.URL)` either way, which is how the number in
   this file was wrong twice — and this line said "nine" until 27 August, when
   it should always have said twenty-six.
-- 99 was counted from two dev runs on 27 August. 94 was not counted: the
-  network went down mid-run. It is 99 less the thirty-one that want a dev
-  server plus the twenty-six that want a deployment, which is the arithmetic
-  that reproduces the previous 85 / 80 / 111 exactly. **Confirm it on the next
-  run against a deployment**, and correct it here if it is out.
+- Both numbers are counted rather than derived: two dev runs on 27 August, and
+  a run against the deployment on 28 August, which came back 94 and green.
 
 **Write the check so it fails first.** Several checks in this suite were
 passing vacuously until that was verified — one tested a tooltip in a browser

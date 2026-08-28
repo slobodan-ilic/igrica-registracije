@@ -117,9 +117,9 @@ clipboard — and 94 want a deployment, because the preview tags are written int
 the built HTML, the pictures come from a function under `api/`, and a shared
 result is a whole page served by one. Run both.
 
-Count from the run rather than from the calls to `check()`. The 99 is two dev
-runs on 27 August; the 94 is derived from it and has not been confirmed against
-a deployment yet.
+Count from the run rather than from the calls to `check()` — half the suite
+sits inside `if (process.env.URL)` either way, which is how the number in
+these files was wrong twice. Both figures were last counted on 28 August.
 
 ## Why one repo
 

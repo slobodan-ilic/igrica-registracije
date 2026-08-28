@@ -6,8 +6,8 @@ built, and what is left.
 Rendered and shareable: [claude.ai/code/artifact/ab9911f1](https://claude.ai/code/artifact/ab9911f1-f66d-441c-8d90-0aa61d59bd06)
 
 > **Reading this.** Section 2 is drawn from the repository's history and is
-> accurate to 27 August 2026, when lint, both builds and both browser suites
-> were last run and came back clean; section 4 lists things
+> accurate to 28 August 2026, when lint, both builds and both browser suites
+> were last run against production and came back clean; section 4 lists things
 > checked and found wanting on that date. Sections 1, 3 and 5 are a proposal and are meant to be
 > argued with. Three statuses are used and they mean what they say:
 > **Shipped** is live and checked, **Next** is agreed and not started, **After**
